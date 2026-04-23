@@ -14,6 +14,11 @@ const PHONE_W = 1.44;
 const PHONE_H = 3.0;
 const PHONE_D = 0.16;
 const CORNER = 0.18;
+const BEVEL_T = 0.015;
+// The ExtrudeGeometry bevel pushes the visible front surface of the body
+// from PHONE_D/2 out to PHONE_D/2 + BEVEL_T. Anything screen-side must sit
+// in front of FRONT_Z or it is hidden inside the titanium frame.
+const FRONT_Z = PHONE_D / 2 + BEVEL_T;
 
 function roundedRect(w: number, h: number, r: number): THREE.Shape {
   const s = new THREE.Shape();
@@ -45,7 +50,7 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
     const geo = new THREE.ExtrudeGeometry(roundedRect(PHONE_W, PHONE_H, CORNER), {
       depth: PHONE_D,
       bevelEnabled: true,
-      bevelThickness: 0.015,
+      bevelThickness: BEVEL_T,
       bevelSize: 0.012,
       bevelSegments: 6,
       curveSegments: 32,
@@ -129,13 +134,14 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
         </mesh>
 
         {/* Black glass bezel behind the screen — opaque so Html occlusion
-            can latch onto it and so the back never peeks through the front. */}
-        <mesh geometry={bezelGeo} position={[0, 0, PHONE_D / 2 + 0.003]}>
+            can latch onto it and so the back never peeks through the front.
+            Sits in front of the body's beveled front face. */}
+        <mesh geometry={bezelGeo} position={[0, 0, FRONT_Z + 0.003]}>
           <meshStandardMaterial color="#050508" metalness={0.1} roughness={0.6} />
         </mesh>
 
         {/* Dynamic island */}
-        <mesh position={[0, 1.32, PHONE_D / 2 + 0.013]}>
+        <mesh position={[0, 1.32, FRONT_Z + 0.009]}>
           <planeGeometry args={[0.42, 0.12]} />
           <meshBasicMaterial color="#000000" />
         </mesh>
@@ -224,7 +230,7 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
         <Html
           transform
           occlude={[bodyRef, backRef]}
-          position={[0, 0, PHONE_D / 2 + 0.03]}
+          position={[0, 0, FRONT_Z + 0.02]}
           distanceFactor={1.35}
           style={{
             width: 393,

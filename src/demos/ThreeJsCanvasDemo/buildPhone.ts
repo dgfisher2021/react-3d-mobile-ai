@@ -21,10 +21,20 @@ function roundedRect(w: number, h: number, r: number): THREE.Shape {
  * Constructs the full iPhone-15-Pro-ish hero: titanium frame, screen bezel,
  * textured screen plane, dynamic island pill, side buttons, rear camera
  * module with three lenses, and back glass. Returns a Group.
+ *
+ * Z-stack note: the body is an ExtrudeGeometry with bevelThickness 0.015
+ * *on each end*, so its centered bounding box runs from -0.095 to +0.095
+ * (not -0.08 to +0.08). Everything screen-side must sit in front of that
+ * 0.095 face or it will be hidden inside the titanium frame.
  */
 export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   const group = new THREE.Group();
   const { w, h, d, corner, bezel, island } = PHONE;
+
+  // The bevel extends the extrude depth by bevelThickness on each side,
+  // so the visible front surface of the body sits at +FRONT_Z, not +d/2.
+  const BEVEL_T = 0.015;
+  const FRONT_Z = d / 2 + BEVEL_T;
 
   // Titanium frame. Physical material + low roughness so the PMREM
   // environment gives it a crisp, sweeping highlight along the bevel,
@@ -33,7 +43,7 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, {
     depth: d,
     bevelEnabled: true,
-    bevelThickness: 0.015,
+    bevelThickness: BEVEL_T,
     bevelSize: 0.012,
     bevelSegments: 6,
     curveSegments: 32,
@@ -63,7 +73,7 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
     roughness: 0.6,
   });
   const bezelMesh = new THREE.Mesh(bezelGeo, bezelMat);
-  bezelMesh.position.z = d / 2 + 0.003;
+  bezelMesh.position.z = FRONT_Z + 0.003;
   group.add(bezelMesh);
 
   // Screen plane with dashboard texture. Opaque — the canvas is already
@@ -77,7 +87,7 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
     toneMapped: false,
   });
   const screen = new THREE.Mesh(screenGeo, screenMat);
-  screen.position.z = d / 2 + 0.012;
+  screen.position.z = FRONT_Z + 0.005;
   group.add(screen);
 
   // Glass reflection overlay — a faint diagonal highlight baked into a
@@ -115,7 +125,7 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
     toneMapped: false,
   });
   const gloss = new THREE.Mesh(screenGeo, glossMat);
-  gloss.position.z = d / 2 + 0.014;
+  gloss.position.z = FRONT_Z + 0.007;
   group.add(gloss);
 
   // Dynamic island pill overlayed on top of everything on the screen.
@@ -123,7 +133,7 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   const islandGeo = new THREE.ShapeGeometry(islandShape, 16);
   const islandMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const islandMesh = new THREE.Mesh(islandGeo, islandMat);
-  islandMesh.position.set(0, island.y, d / 2 + 0.0155);
+  islandMesh.position.set(0, island.y, FRONT_Z + 0.009);
   group.add(islandMesh);
 
   // Side buttons — polished titanium
