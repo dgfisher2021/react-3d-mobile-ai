@@ -1,0 +1,36 @@
+import type { Theme, ThemeName } from '../types';
+
+export const THEMES: Record<ThemeName, Theme> = {
+  dark: {
+    screenBg: 'linear-gradient(180deg, #0B1426, #0d1b2a)',
+    cardBg: 'rgba(255,255,255,0.035)',
+    cardBorder: 'rgba(255,255,255,0.05)',
+    bodyText: '#CBD5E0',
+    headers: '#FFFFFF',
+    muted: '#718096',
+    aiBubbleBg: 'rgba(49,130,206,0.12)',
+    userBubbleBg: 'rgba(49,151,149,0.2)',
+    chipBg: 'rgba(255,255,255,0.06)',
+    navBg: 'rgba(11,20,38,0.95)',
+    navBorder: 'rgba(255,255,255,0.06)',
+    homeIndicator: 'rgba(255,255,255,0.25)',
+    expandedBg: 'rgba(255,255,255,0.02)',
+    statusBarText: '#FFFFFF',
+  },
+  light: {
+    screenBg: 'linear-gradient(180deg, #FAFBFE, #F0F2F8)',
+    cardBg: 'rgba(255,255,255,0.7)',
+    cardBorder: 'rgba(100,116,145,0.12)',
+    bodyText: '#3B4559',
+    headers: '#1B2438',
+    muted: '#7A869A',
+    aiBubbleBg: 'rgba(240,244,250,0.8)',
+    userBubbleBg: 'rgba(49,151,149,0.1)',
+    chipBg: 'rgba(100,116,145,0.06)',
+    navBg: 'rgba(250,251,254,0.92)',
+    navBorder: 'rgba(100,116,145,0.1)',
+    homeIndicator: 'rgba(27,36,56,0.15)',
+    expandedBg: 'rgba(100,116,145,0.03)',
+    statusBarText: '#1B2438',
+  },
+};
