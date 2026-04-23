@@ -18,14 +18,18 @@ function roundedRect(w: number, h: number, r: number): THREE.Shape {
 }
 
 /**
- * Constructs the full iPhone-15-Pro-ish hero: titanium frame, screen bezel,
- * textured screen plane, dynamic island pill, side buttons, rear camera
- * module with three lenses, and back glass. Returns a Group.
+ * Constructs the full iPhone-15-Pro-ish hero: titanium frame, flat screen
+ * bezel, textured screen plane, dynamic island pill, side buttons, rear
+ * camera module with three lenses, and back glass. Returns a Group.
  *
  * Z-stack note: the body is an ExtrudeGeometry with bevelThickness 0.015
  * *on each end*, so its centered bounding box runs from -0.095 to +0.095
  * (not -0.08 to +0.08). Everything screen-side must sit in front of that
- * 0.095 face or it will be hidden inside the titanium frame.
+ * 0.095 face or it will be hidden inside the titanium frame. Current
+ * offsets from FRONT_Z (= 0.095):
+ *   bezel (flat)    + 0.003
+ *   screen plane    + 0.005
+ *   dynamic island  + 0.007
  */
 export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   const group = new THREE.Group();
@@ -90,50 +94,12 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   screen.position.z = FRONT_Z + 0.005;
   group.add(screen);
 
-  // Glass reflection overlay — a faint diagonal highlight baked into a
-  // canvas, composited on top of the screen with additive blending. This is
-  // what gives the Three.js demo the same glossy feel as the CSS3D demo.
-  const glossCanvas = document.createElement('canvas');
-  glossCanvas.width = 256;
-  glossCanvas.height = 512;
-  const gctx = glossCanvas.getContext('2d');
-  if (gctx) {
-    gctx.clearRect(0, 0, 256, 512);
-    const hi = gctx.createLinearGradient(0, 0, 256, 512);
-    hi.addColorStop(0, 'rgba(255,255,255,0.16)');
-    hi.addColorStop(0.35, 'rgba(255,255,255,0.02)');
-    hi.addColorStop(0.6, 'rgba(255,255,255,0)');
-    hi.addColorStop(0.85, 'rgba(255,255,255,0.02)');
-    hi.addColorStop(1, 'rgba(255,255,255,0.06)');
-    gctx.fillStyle = hi;
-    gctx.fillRect(0, 0, 256, 512);
-    // Soft hotspot near top-left for the "sheen" pop.
-    const hot = gctx.createRadialGradient(60, 90, 0, 60, 90, 180);
-    hot.addColorStop(0, 'rgba(255,255,255,0.22)');
-    hot.addColorStop(1, 'rgba(255,255,255,0)');
-    gctx.fillStyle = hot;
-    gctx.fillRect(0, 0, 256, 512);
-  }
-  const glossTex = new THREE.CanvasTexture(glossCanvas);
-  glossTex.colorSpace = THREE.SRGBColorSpace;
-  glossTex.needsUpdate = true;
-  const glossMat = new THREE.MeshBasicMaterial({
-    map: glossTex,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    toneMapped: false,
-  });
-  const gloss = new THREE.Mesh(screenGeo, glossMat);
-  gloss.position.z = FRONT_Z + 0.007;
-  group.add(gloss);
-
-  // Dynamic island pill overlayed on top of everything on the screen.
+  // Dynamic island pill overlayed on top of the screen.
   const islandShape = roundedRect(island.w, island.h, island.h / 2);
   const islandGeo = new THREE.ShapeGeometry(islandShape, 16);
   const islandMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const islandMesh = new THREE.Mesh(islandGeo, islandMat);
-  islandMesh.position.set(0, island.y, FRONT_Z + 0.009);
+  islandMesh.position.set(0, island.y, FRONT_Z + 0.007);
   group.add(islandMesh);
 
   // Side buttons — polished titanium
