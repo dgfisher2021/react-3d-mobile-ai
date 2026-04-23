@@ -24,6 +24,185 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
     ctx.closePath();
   };
 
+  // Lucide-style stroked icons rendered onto canvas. Each takes a center
+  // point and a size (height of the icon bounding box). We keep stroke
+  // widths proportional so icons read crisply at the texture's native 512px.
+  const iconStroke = (cx: number, cy: number, size: number, color: string) => {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = Math.max(1.5, size * 0.1);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.translate(cx, cy);
+  };
+  const iconEnd = () => ctx.restore();
+
+  const drawStarIcon = (cx: number, cy: number, size: number, color: string) => {
+    iconStroke(cx, cy, size, color);
+    const outer = size / 2;
+    const inner = outer * 0.4;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = (i * Math.PI) / 5 - Math.PI / 2;
+      const r = i % 2 === 0 ? outer : inner;
+      const px = Math.cos(a) * r;
+      const py = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    iconEnd();
+  };
+
+  const drawFileTextIcon = (cx: number, cy: number, size: number, color: string) => {
+    iconStroke(cx, cy, size, color);
+    const w = size * 0.72;
+    const h = size * 0.9;
+    const x = -w / 2;
+    const y = -h / 2;
+    const fold = size * 0.22;
+    // Document outline with folded corner
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w - fold, y);
+    ctx.lineTo(x + w, y + fold);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.closePath();
+    ctx.stroke();
+    // Fold tab
+    ctx.beginPath();
+    ctx.moveTo(x + w - fold, y);
+    ctx.lineTo(x + w - fold, y + fold);
+    ctx.lineTo(x + w, y + fold);
+    ctx.stroke();
+    // Text lines
+    const lineInset = size * 0.14;
+    ctx.beginPath();
+    ctx.moveTo(x + lineInset, y + h * 0.6);
+    ctx.lineTo(x + w - lineInset, y + h * 0.6);
+    ctx.moveTo(x + lineInset, y + h * 0.78);
+    ctx.lineTo(x + w - lineInset, y + h * 0.78);
+    ctx.stroke();
+    iconEnd();
+  };
+
+  const drawCalendarIcon = (cx: number, cy: number, size: number, color: string) => {
+    iconStroke(cx, cy, size, color);
+    const w = size * 0.8;
+    const h = size * 0.78;
+    const x = -w / 2;
+    const y = -h / 2 + size * 0.04;
+    const rad = size * 0.08;
+    // Top bindings
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.28, y - size * 0.16);
+    ctx.lineTo(x + w * 0.28, y + size * 0.1);
+    ctx.moveTo(x + w * 0.72, y - size * 0.16);
+    ctx.lineTo(x + w * 0.72, y + size * 0.1);
+    ctx.stroke();
+    // Body rect
+    ctx.beginPath();
+    ctx.moveTo(x + rad, y);
+    ctx.lineTo(x + w - rad, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+    ctx.lineTo(x + w, y + h - rad);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+    ctx.lineTo(x + rad, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+    ctx.lineTo(x, y + rad);
+    ctx.quadraticCurveTo(x, y, x + rad, y);
+    ctx.closePath();
+    ctx.stroke();
+    // Divider
+    ctx.beginPath();
+    ctx.moveTo(x, y + h * 0.32);
+    ctx.lineTo(x + w, y + h * 0.32);
+    ctx.stroke();
+    iconEnd();
+  };
+
+  const drawLayersIcon = (cx: number, cy: number, size: number, color: string) => {
+    iconStroke(cx, cy, size, color);
+    const half = size * 0.48;
+    // Top diamond
+    ctx.beginPath();
+    ctx.moveTo(0, -half);
+    ctx.lineTo(half, -half * 0.3);
+    ctx.lineTo(0, half * 0.35);
+    ctx.lineTo(-half, -half * 0.3);
+    ctx.closePath();
+    ctx.stroke();
+    // Second layer
+    ctx.beginPath();
+    ctx.moveTo(-half, half * 0.05);
+    ctx.lineTo(0, half * 0.7);
+    ctx.lineTo(half, half * 0.05);
+    ctx.stroke();
+    iconEnd();
+  };
+
+  const drawSparklesIcon = (cx: number, cy: number, size: number, color: string) => {
+    iconStroke(cx, cy, size, color);
+    ctx.fillStyle = color;
+    const sparkle = (x: number, y: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x, y - r);
+      ctx.quadraticCurveTo(x + r * 0.18, y - r * 0.18, x + r, y);
+      ctx.quadraticCurveTo(x + r * 0.18, y + r * 0.18, x, y + r);
+      ctx.quadraticCurveTo(x - r * 0.18, y + r * 0.18, x - r, y);
+      ctx.quadraticCurveTo(x - r * 0.18, y - r * 0.18, x, y - r);
+      ctx.closePath();
+      ctx.fill();
+    };
+    sparkle(0, 0, size * 0.42);
+    sparkle(size * 0.32, -size * 0.34, size * 0.15);
+    sparkle(-size * 0.3, size * 0.28, size * 0.12);
+    iconEnd();
+  };
+
+  const drawTargetIcon = (cx: number, cy: number, size: number, color: string) => {
+    iconStroke(cx, cy, size, color);
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.42, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.26, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    iconEnd();
+  };
+
+  const drawAlertTriangleIcon = (cx: number, cy: number, size: number, color: string) => {
+    iconStroke(cx, cy, size, color);
+    const h = size * 0.85;
+    const w = size * 0.95;
+    const r = size * 0.08;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 + r, h / 2);
+    ctx.lineTo(w / 2 - r, h / 2);
+    ctx.quadraticCurveTo(w / 2, h / 2, w / 2 - r * 0.5, h / 2 - r * 0.7);
+    ctx.lineTo(r * 0.7, -h / 2 + r);
+    ctx.quadraticCurveTo(0, -h / 2 - r * 0.2, -r * 0.7, -h / 2 + r);
+    ctx.lineTo(-w / 2 + r * 0.5, h / 2 - r * 0.7);
+    ctx.quadraticCurveTo(-w / 2, h / 2, -w / 2 + r, h / 2);
+    ctx.closePath();
+    ctx.stroke();
+    // Exclamation
+    ctx.beginPath();
+    ctx.moveTo(0, -h * 0.2);
+    ctx.lineTo(0, h * 0.15);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, h * 0.3, size * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    iconEnd();
+  };
+
   ctx.clearRect(0, 0, W, H);
   const cornerR = 32 * s;
   rr(0, 0, W, H, cornerR);
@@ -119,10 +298,8 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
   ctx.strokeStyle = 'rgba(236,201,75,0.2)';
   rr(16 * s, cy, W - 32 * s, grH, 14 * s);
   ctx.stroke();
+  drawTargetIcon(32 * s, cy + 18 * s, 14 * s, '#ECC94B');
   ctx.fillStyle = '#ECC94B';
-  ctx.beginPath();
-  ctx.arc(32 * s, cy + 18 * s, 5 * s, 0, Math.PI * 2);
-  ctx.fill();
   ctx.font = `bold ${Math.round(11 * s)}px -apple-system, sans-serif`;
   ctx.fillText('The Golden Rule', 44 * s, cy + 20 * s);
   ctx.fillStyle = '#CBD5E0';
@@ -179,15 +356,8 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
   ctx.strokeStyle = 'rgba(245,101,101,0.2)';
   rr(16 * s, cy, W - 32 * s, ewH, 14 * s);
   ctx.stroke();
+  drawAlertTriangleIcon(32 * s, cy + 16 * s, 14 * s, '#F56565');
   ctx.fillStyle = '#F56565';
-  ctx.beginPath();
-  const tx = 32 * s;
-  const ty = cy + 14 * s;
-  ctx.moveTo(tx, ty - 5 * s);
-  ctx.lineTo(tx + 5 * s, ty + 5 * s);
-  ctx.lineTo(tx - 5 * s, ty + 5 * s);
-  ctx.closePath();
-  ctx.fill();
   ctx.font = `bold ${Math.round(10 * s)}px -apple-system, sans-serif`;
   ctx.fillText('Epic 10-Week Warning', 44 * s, cy + 18 * s);
   ctx.fillStyle = '#CBD5E0';
@@ -206,58 +376,73 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
   ctx.lineTo(W, navY);
   ctx.stroke();
 
-  const tabs = [
-    { label: 'Standards', active: true, isCenter: false },
-    { label: 'Tickets', active: false, isCenter: false },
-    { label: 'AI', active: false, isCenter: true },
-    { label: 'Meetings', active: false, isCenter: false },
-    { label: 'Hierarchy', active: false, isCenter: false },
+  type TabKind = 'standards' | 'tickets' | 'ai' | 'meetings' | 'hierarchy';
+  const tabs: { label: string; kind: TabKind; active: boolean; isCenter: boolean }[] = [
+    { label: 'Standards', kind: 'standards', active: true, isCenter: false },
+    { label: 'Tickets', kind: 'tickets', active: false, isCenter: false },
+    { label: 'Ask AI', kind: 'ai', active: false, isCenter: true },
+    { label: 'Meetings', kind: 'meetings', active: false, isCenter: false },
+    { label: 'Hierarchy', kind: 'hierarchy', active: false, isCenter: false },
   ];
+
+  const drawTabIcon = (kind: TabKind, cx: number, cy: number, size: number, color: string) => {
+    switch (kind) {
+      case 'standards':
+        return drawStarIcon(cx, cy, size, color);
+      case 'tickets':
+        return drawFileTextIcon(cx, cy, size, color);
+      case 'ai':
+        return drawSparklesIcon(cx, cy, size, color);
+      case 'meetings':
+        return drawCalendarIcon(cx, cy, size, color);
+      case 'hierarchy':
+        return drawLayersIcon(cx, cy, size, color);
+    }
+  };
+
   const tabW = W / 5;
   tabs.forEach((tab, i) => {
     const tabX = i * tabW + tabW / 2;
-    const tabY = navY + (tab.isCenter ? 14 * s : 24 * s);
 
     if (tab.isCenter) {
-      const cGrad = ctx.createLinearGradient(
-        tabX - 18 * s,
-        tabY - 18 * s,
-        tabX + 18 * s,
-        tabY + 18 * s,
-      );
+      // Lifted FAB-style "Ask AI" circle, matching BottomNav.tsx
+      const fabCY = navY + 6 * s;
+      const fabR = 20 * s;
+      const cGrad = ctx.createLinearGradient(tabX - fabR, fabCY - fabR, tabX + fabR, fabCY + fabR);
       cGrad.addColorStop(0, '#3182CE');
       cGrad.addColorStop(1, '#319795');
+      // subtle glow ring
+      ctx.fillStyle = 'rgba(49,130,206,0.18)';
+      ctx.beginPath();
+      ctx.arc(tabX, fabCY, fabR + 5 * s, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = cGrad;
       ctx.beginPath();
-      ctx.arc(tabX, tabY, 18 * s, 0, Math.PI * 2);
+      ctx.arc(tabX, fabCY, fabR, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#FFFFFF';
+      // ring outline to match the `border: 3px solid navBg` in BottomNav
+      ctx.strokeStyle = '#0B1426';
+      ctx.lineWidth = 2 * s;
       ctx.beginPath();
-      const outerR = 7 * s;
-      const innerR = 2.5 * s;
-      for (let p = 0; p < 4; p++) {
-        const angle = (p * Math.PI) / 2 - Math.PI / 2;
-        const nextAngle = angle + Math.PI / 4;
-        ctx.lineTo(tabX + Math.cos(angle) * outerR, tabY + Math.sin(angle) * outerR);
-        ctx.lineTo(tabX + Math.cos(nextAngle) * innerR, tabY + Math.sin(nextAngle) * innerR);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.font = `600 ${Math.round(8 * s)}px -apple-system, sans-serif`;
+      ctx.arc(tabX, fabCY, fabR, 0, Math.PI * 2);
+      ctx.stroke();
+      drawSparklesIcon(tabX, fabCY, 18 * s, '#FFFFFF');
+      ctx.font = `600 ${Math.round(7 * s)}px -apple-system, sans-serif`;
       ctx.fillStyle = '#319795';
       ctx.textAlign = 'center';
-      ctx.fillText('Ask AI', tabX, tabY + 34 * s);
+      ctx.fillText(tab.label, tabX, fabCY + fabR + 10 * s);
     } else {
-      ctx.fillStyle = tab.active ? '#319795' : '#718096';
-      ctx.beginPath();
-      ctx.arc(tabX, tabY, 8 * s, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.font = `${tab.active ? '700' : '500'} ${Math.round(8 * s)}px -apple-system, sans-serif`;
+      const iconY = navY + 22 * s;
+      const iconColor = tab.active ? '#319795' : '#718096';
+      drawTabIcon(tab.kind, tabX, iconY, 16 * s, iconColor);
+      ctx.font = `${tab.active ? '700' : '500'} ${Math.round(7.5 * s)}px -apple-system, sans-serif`;
+      ctx.fillStyle = iconColor;
       ctx.textAlign = 'center';
-      ctx.fillText(tab.label, tabX, tabY + 20 * s);
+      ctx.fillText(tab.label, tabX, iconY + 18 * s);
       if (tab.active) {
+        ctx.fillStyle = '#319795';
         ctx.beginPath();
-        ctx.arc(tabX, tabY + 28 * s, 2 * s, 0, Math.PI * 2);
+        ctx.arc(tabX, iconY + 26 * s, 2 * s, 0, Math.PI * 2);
         ctx.fill();
       }
     }

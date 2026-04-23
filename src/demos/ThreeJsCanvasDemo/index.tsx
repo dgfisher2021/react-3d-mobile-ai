@@ -46,8 +46,9 @@ export default function ThreeJsCanvasDemo() {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(CW, CH);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
 
     const screenCanvas = document.createElement('canvas');
@@ -55,6 +56,11 @@ export default function ThreeJsCanvasDemo() {
     screenCanvas.height = 1024;
     drawScreen(screenCanvas);
     const screenTexture = new THREE.CanvasTexture(screenCanvas);
+    // The 2D canvas was painted in sRGB — tag it so the renderer decodes it
+    // correctly, otherwise the output is double-gamma-lifted and the dashboard
+    // looks washed out as if a white film is over it.
+    screenTexture.colorSpace = THREE.SRGBColorSpace;
+    screenTexture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     screenTexture.needsUpdate = true;
     screenTexture.minFilter = THREE.LinearFilter;
     screenTexture.magFilter = THREE.LinearFilter;
