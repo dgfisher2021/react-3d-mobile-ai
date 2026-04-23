@@ -26,21 +26,26 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   const group = new THREE.Group();
   const { w, h, d, corner, bezel, island } = PHONE;
 
-  // Body
+  // Titanium frame. Physical material + low roughness so the PMREM
+  // environment gives it a crisp, sweeping highlight along the bevel,
+  // plus a thin clearcoat for the "ceramic-glass front" feel.
   const bodyShape = roundedRect(w, h, corner);
   const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, {
     depth: d,
     bevelEnabled: true,
-    bevelThickness: 0.01,
-    bevelSize: 0.01,
-    bevelSegments: 4,
-    curveSegments: 24,
+    bevelThickness: 0.015,
+    bevelSize: 0.012,
+    bevelSegments: 6,
+    curveSegments: 32,
   });
   bodyGeo.center();
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2a30,
-    metalness: 0.85,
-    roughness: 0.28,
+  const bodyMat = new THREE.MeshPhysicalMaterial({
+    color: 0x3a3a44,
+    metalness: 1.0,
+    roughness: 0.22,
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.15,
+    envMapIntensity: 1.15,
   });
   group.add(new THREE.Mesh(bodyGeo, bodyMat));
 
@@ -121,11 +126,12 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   islandMesh.position.set(0, island.y, d / 2 + 0.0155);
   group.add(islandMesh);
 
-  // Side buttons
-  const buttonMat = new THREE.MeshStandardMaterial({
-    color: 0x3a3a42,
-    metalness: 0.9,
-    roughness: 0.25,
+  // Side buttons — polished titanium
+  const buttonMat = new THREE.MeshPhysicalMaterial({
+    color: 0x4a4a54,
+    metalness: 1.0,
+    roughness: 0.18,
+    envMapIntensity: 1.2,
   });
   const powerGeo = new THREE.BoxGeometry(0.02, 0.28, 0.04);
   const power = new THREE.Mesh(powerGeo, buttonMat);
@@ -148,10 +154,11 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
 
   // Rear camera module
   const camPlatformGeo = new THREE.BoxGeometry(0.48, 0.48, 0.04);
-  const camPlatformMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2a30,
-    metalness: 0.85,
-    roughness: 0.3,
+  const camPlatformMat = new THREE.MeshPhysicalMaterial({
+    color: 0x3a3a44,
+    metalness: 1.0,
+    roughness: 0.25,
+    envMapIntensity: 1.1,
   });
   const camPlatform = new THREE.Mesh(camPlatformGeo, camPlatformMat);
   camPlatform.position.set(-w / 2 + 0.34, h / 2 - 0.34, -d / 2 - 0.02);
@@ -159,15 +166,19 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
 
   const lensGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.03, 24);
   lensGeo.rotateX(Math.PI / 2);
-  const lensMat = new THREE.MeshStandardMaterial({
-    color: 0x111118,
-    metalness: 0.4,
-    roughness: 0.2,
+  const lensMat = new THREE.MeshPhysicalMaterial({
+    color: 0x080810,
+    metalness: 0.3,
+    roughness: 0.08,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+    envMapIntensity: 1.4,
   });
-  const lensRingMat = new THREE.MeshStandardMaterial({
-    color: 0x444450,
-    metalness: 0.95,
-    roughness: 0.15,
+  const lensRingMat = new THREE.MeshPhysicalMaterial({
+    color: 0x5a5a65,
+    metalness: 1.0,
+    roughness: 0.12,
+    envMapIntensity: 1.4,
   });
   const ringGeo = new THREE.TorusGeometry(0.08, 0.012, 12, 24);
 
@@ -185,13 +196,16 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
     group.add(ring);
   });
 
-  // Back glass
+  // Back glass — frosted with a slight sheen from the IBL
   const backShape = roundedRect(w - 0.03, h - 0.03, corner - 0.015);
   const backGeo = new THREE.ShapeGeometry(backShape, 24);
-  const backMat = new THREE.MeshStandardMaterial({
-    color: 0x1c1c22,
-    metalness: 0.15,
-    roughness: 0.55,
+  const backMat = new THREE.MeshPhysicalMaterial({
+    color: 0x1c1c24,
+    metalness: 0.2,
+    roughness: 0.45,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.3,
+    envMapIntensity: 0.9,
   });
   const back = new THREE.Mesh(backGeo, backMat);
   back.position.z = -d / 2 - 0.001;

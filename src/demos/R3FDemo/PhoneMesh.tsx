@@ -43,10 +43,10 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
     const geo = new THREE.ExtrudeGeometry(roundedRect(PHONE_W, PHONE_H, CORNER), {
       depth: PHONE_D,
       bevelEnabled: true,
-      bevelThickness: 0.01,
-      bevelSize: 0.01,
-      bevelSegments: 4,
-      curveSegments: 24,
+      bevelThickness: 0.015,
+      bevelSize: 0.012,
+      bevelSegments: 6,
+      curveSegments: 32,
     });
     geo.center();
     return geo;
@@ -95,9 +95,19 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
   return (
     <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.3}>
       <group>
-        {/* Body (titanium frame) */}
+        {/* Titanium frame — MeshPhysicalMaterial + clearcoat so the
+            <Environment> IBL paints a sharp highlight along the bevel.
+            Mirrors the pure-Three.js demo's material for cross-demo
+            consistency. */}
         <mesh ref={bodyRef} geometry={bodyGeo}>
-          <meshStandardMaterial color="#2a2a30" metalness={0.85} roughness={0.28} />
+          <meshPhysicalMaterial
+            color="#3a3a44"
+            metalness={1.0}
+            roughness={0.22}
+            clearcoat={0.5}
+            clearcoatRoughness={0.15}
+            envMapIntensity={1.15}
+          />
         </mesh>
 
         {/* Black glass bezel behind the screen — opaque so Html occlusion
@@ -112,32 +122,64 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
           <meshBasicMaterial color="#000000" />
         </mesh>
 
-        {/* Buttons */}
+        {/* Side buttons — polished titanium */}
         <mesh position={[PHONE_W / 2 + 0.01, 0.4, 0]}>
           <boxGeometry args={[0.02, 0.28, 0.04]} />
-          <meshStandardMaterial color="#3a3a42" metalness={0.9} roughness={0.25} />
+          <meshPhysicalMaterial
+            color="#4a4a54"
+            metalness={1.0}
+            roughness={0.18}
+            envMapIntensity={1.2}
+          />
         </mesh>
         <mesh position={[-PHONE_W / 2 - 0.01, 0.55, 0]}>
           <boxGeometry args={[0.02, 0.18, 0.04]} />
-          <meshStandardMaterial color="#3a3a42" metalness={0.9} roughness={0.25} />
+          <meshPhysicalMaterial
+            color="#4a4a54"
+            metalness={1.0}
+            roughness={0.18}
+            envMapIntensity={1.2}
+          />
         </mesh>
         <mesh position={[-PHONE_W / 2 - 0.01, 0.28, 0]}>
           <boxGeometry args={[0.02, 0.18, 0.04]} />
-          <meshStandardMaterial color="#3a3a42" metalness={0.9} roughness={0.25} />
+          <meshPhysicalMaterial
+            color="#4a4a54"
+            metalness={1.0}
+            roughness={0.18}
+            envMapIntensity={1.2}
+          />
         </mesh>
 
         {/* Camera module */}
         <mesh position={[-PHONE_W / 2 + 0.34, PHONE_H / 2 - 0.34, -PHONE_D / 2 - 0.02]}>
           <boxGeometry args={[0.48, 0.48, 0.04]} />
-          <meshStandardMaterial color="#2a2a30" metalness={0.85} roughness={0.3} />
+          <meshPhysicalMaterial
+            color="#3a3a44"
+            metalness={1.0}
+            roughness={0.25}
+            envMapIntensity={1.1}
+          />
         </mesh>
         {lensPositions.map(([x, y], i) => (
           <group key={i}>
             <mesh position={[x, y, -PHONE_D / 2 - 0.035]} geometry={lensGeo}>
-              <meshStandardMaterial color="#111118" metalness={0.4} roughness={0.2} />
+              <meshPhysicalMaterial
+                color="#080810"
+                metalness={0.3}
+                roughness={0.08}
+                clearcoat={1.0}
+                clearcoatRoughness={0.05}
+                envMapIntensity={1.4}
+              />
             </mesh>
             <mesh position={[x, y, -PHONE_D / 2 - 0.04]} geometry={ringGeo}>
-              <meshStandardMaterial color="#444450" metalness={0.95} roughness={0.15} />
+              <meshPhysicalMaterial
+                color="#5a5a65"
+                metalness={1.0}
+                roughness={0.12}
+                envMapIntensity={1.4}
+              />
             </mesh>
           </group>
         ))}
@@ -145,7 +187,14 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
         {/* Back glass — a thin rounded slab, not a plane, so it's a real
             occluder with a proper back-facing surface from every angle. */}
         <mesh ref={backRef} geometry={backGeo} position={[0, 0, -PHONE_D / 2 - 0.002]}>
-          <meshStandardMaterial color="#1c1c22" metalness={0.15} roughness={0.55} />
+          <meshPhysicalMaterial
+            color="#1c1c24"
+            metalness={0.2}
+            roughness={0.45}
+            clearcoat={0.3}
+            clearcoatRoughness={0.3}
+            envMapIntensity={0.9}
+          />
         </mesh>
 
         {/* Live interactive screen via drei Html (transform).

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { DemoOverlay } from '../../components/DemoOverlay';
 import { buildPhone } from './buildPhone';
 import { drawScreen } from './drawScreen';
@@ -68,24 +69,38 @@ export default function ThreeJsCanvasDemo() {
     const phone = buildPhone(screenTexture);
     scene.add(phone);
 
-    // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    // Image-based lighting. The titanium frame and camera hardware are
+    // metallic (metalness ~0.85); metals get ~100% of their colour from
+    // reflections, so without an environment to reflect they render as a
+    // flat dark grey — that was the "no shine" issue. A PMREM-prefiltered
+    // RoomEnvironment gives every MeshStandardMaterial in the scene
+    // proper studio-style reflections, instantly making the phone look
+    // like shot-on-a-product-shoot hardware.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envMap;
+
+    // Direct lights on top of the IBL — these give directional specular
+    // streaks that sell the "polished edge" feel on the bevels and
+    // camera rings, which pure IBL alone tends to average out.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
     keyLight.position.set(3, 5, 4);
     scene.add(keyLight);
-    const fillLight = new THREE.DirectionalLight(0x8ecdf7, 0.4);
+    const fillLight = new THREE.DirectionalLight(0x8ecdf7, 0.5);
     fillLight.position.set(-3, 2, 4);
     scene.add(fillLight);
-    const rimLight = new THREE.DirectionalLight(0x319795, 0.6);
-    rimLight.position.set(0, -2, -4);
+    const rimLight = new THREE.DirectionalLight(0x5eead4, 0.9);
+    rimLight.position.set(-2, -1, -3);
     scene.add(rimLight);
-    const topLight = new THREE.PointLight(0xfff0e0, 0.3);
+    const topLight = new THREE.PointLight(0xfff0e0, 0.4);
     topLight.position.set(0, 4, 2);
     scene.add(topLight);
-    const accentLeft = new THREE.PointLight(0x3182ce, 0.2);
+    const accentLeft = new THREE.PointLight(0x3182ce, 0.3);
     accentLeft.position.set(-3, 0, 1);
     scene.add(accentLeft);
-    const accentRight = new THREE.PointLight(0x9f7aea, 0.15);
+    const accentRight = new THREE.PointLight(0x9f7aea, 0.25);
     accentRight.position.set(3, -1, 1);
     scene.add(accentRight);
 
@@ -226,6 +241,8 @@ export default function ThreeJsCanvasDemo() {
       canvas.removeEventListener('touchmove', onPointerMove);
       canvas.removeEventListener('touchend', onPointerUp);
       canvas.removeEventListener('wheel', onWheel);
+      envMap.dispose();
+      pmrem.dispose();
       renderer.dispose();
       screenTexture.dispose();
       if (container.contains(canvas)) container.removeChild(canvas);
