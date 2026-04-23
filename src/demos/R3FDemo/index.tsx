@@ -1,6 +1,7 @@
-import { ContactShadows, OrbitControls } from '@react-three/drei';
+import { ContactShadows, Environment, OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { useState } from 'react';
+import * as THREE from 'three';
 import { DemoOverlay } from '../../components/DemoOverlay';
 import type { ThemeName } from '../../types';
 import { PhoneMesh } from './PhoneMesh';
@@ -24,13 +25,23 @@ export default function R3FDemo() {
         overflow: 'hidden',
       }}
     >
-      <Canvas camera={{ position: [0, 0, 5.5], fov: 35 }} dpr={[1, 2]}>
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[3, 5, 4]} intensity={0.9} />
-        <directionalLight position={[-3, 2, 4]} intensity={0.4} color="#8ecdf7" />
-        <pointLight position={[0, -2, -4]} intensity={0.6} color="#319795" />
+      <Canvas
+        camera={{ position: [0, 0, 5.5], fov: 35 }}
+        dpr={[1, 2]}
+        gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
+      >
+        {/* IBL: bakes a studio RoomEnvironment into a PMREM texture and
+            feeds it to every MeshStandardMaterial/PhysicalMaterial so the
+            titanium frame and camera rings get proper reflections. Without
+            this, metallic surfaces have nothing to reflect and render
+            dull. */}
+        <Environment preset="studio" />
+        <ambientLight intensity={0.15} />
+        <directionalLight position={[3, 5, 4]} intensity={1.2} />
+        <directionalLight position={[-3, 2, 4]} intensity={0.5} color="#8ecdf7" />
+        <directionalLight position={[-2, -1, -3]} intensity={0.9} color="#5eead4" />
         <PhoneMesh themeName={themeName} onToggleTheme={toggleTheme} />
-        <ContactShadows position={[0, -2, 0]} opacity={0.3} scale={8} blur={2.5} />
+        <ContactShadows position={[0, -2, 0]} opacity={0.35} scale={8} blur={2.5} />
         <OrbitControls
           enablePan={false}
           minDistance={3}
