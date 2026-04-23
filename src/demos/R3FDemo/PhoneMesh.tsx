@@ -235,9 +235,12 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
           style={{
             width: 393,
             height: 852,
-            borderRadius: 34,
+            // Screen corner radius kept in sync across all three demos
+            // (CSS3D uses 42, Three.js canvas uses 42*s). See
+            // ThreeJsCanvasDemo/buildPhone.ts and CSS3DDemo/index.tsx.
+            borderRadius: 42,
             overflow: 'hidden',
-            clipPath: 'inset(0 round 34px)',
+            clipPath: 'inset(0 round 42px)',
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
           }}

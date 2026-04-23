@@ -80,12 +80,30 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   bezelMesh.position.z = FRONT_Z + 0.003;
   group.add(bezelMesh);
 
-  // Screen plane with dashboard texture. Opaque — the canvas is already
-  // opaque inside the rounded rect, and `transparent: true` was enabling
-  // alpha blending against the dark bezel which produced a milky film.
+  // Screen plane with dashboard texture. Uses a rounded ShapeGeometry
+  // instead of a flat PlaneGeometry so the mesh's corners match the
+  // rounded clip painted into the canvas — without this the plane's
+  // rectangular corners would render as black squares sticking out
+  // past the rounded dashboard art. Corner radius (42 logical pt, =
+  // 42/393 of the screen width in world units) is kept in sync with
+  // the canvas `cornerR` in drawScreen.ts and the CSS3D/R3F demos.
   const screenW = w - bezel * 2;
   const screenH = h - bezel * 2;
-  const screenGeo = new THREE.PlaneGeometry(screenW, screenH, 1, 1);
+  const SCREEN_CORNER = (42 / 393) * screenW;
+  const screenGeo = new THREE.ShapeGeometry(
+    roundedRect(screenW, screenH, SCREEN_CORNER),
+    24,
+  );
+  // ShapeGeometry emits raw XY as UVs; remap them to [0,1] over the
+  // shape's bounding box so the canvas texture maps 1:1 across the
+  // rounded rect.
+  {
+    const uv = screenGeo.attributes.uv;
+    for (let i = 0; i < uv.count; i++) {
+      uv.setXY(i, (uv.getX(i) + screenW / 2) / screenW, (uv.getY(i) + screenH / 2) / screenH);
+    }
+    uv.needsUpdate = true;
+  }
   const screenMat = new THREE.MeshBasicMaterial({
     map: screenTexture,
     toneMapped: false,

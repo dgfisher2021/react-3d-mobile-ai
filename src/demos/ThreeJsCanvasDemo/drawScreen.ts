@@ -204,7 +204,10 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
   };
 
   ctx.clearRect(0, 0, W, H);
-  const cornerR = 32 * s;
+  // Screen corner radius in logical points. Kept at 42 to match the
+  // CSS3D and R3F demos — see buildPhone.ts which mirrors this value so
+  // the screen mesh geometry matches the painted clip.
+  const cornerR = 42 * s;
   rr(0, 0, W, H, cornerR);
   ctx.save();
   ctx.clip();
