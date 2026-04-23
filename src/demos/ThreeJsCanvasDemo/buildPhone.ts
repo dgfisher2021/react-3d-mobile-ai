@@ -59,14 +59,14 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   });
   group.add(new THREE.Mesh(bodyGeo, bodyMat));
 
-  // Screen bezel (black glass behind screen)
+  // Screen bezel — a flat ShapeGeometry (zero thickness) sitting between
+  // the body's front bevel and the screen plane. Using an ExtrudeGeometry
+  // with depth > 0 was centering a 0.005-thick slab around FRONT_Z + 0.003,
+  // which pushed the bezel's FRONT face to z=0.1005 — in front of the
+  // screen at z=0.1 — completely covering the dashboard. A flat plane has
+  // no such thickness trap.
   const bezelShape = roundedRect(w - 0.02, h - 0.02, corner - 0.01);
-  const bezelGeo = new THREE.ExtrudeGeometry(bezelShape, {
-    depth: 0.005,
-    bevelEnabled: false,
-    curveSegments: 24,
-  });
-  bezelGeo.center();
+  const bezelGeo = new THREE.ShapeGeometry(bezelShape, 24);
   const bezelMat = new THREE.MeshStandardMaterial({
     color: 0x050508,
     metalness: 0.1,
