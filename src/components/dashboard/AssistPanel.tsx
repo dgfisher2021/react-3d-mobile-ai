@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, Send, Sparkles, X } from 'lucide-react';
 import { QUICK_CHIPS } from '../../constants/quickChips';
-import { parseAIResponse } from '../../hooks/useAIResponseParser';
+import { parseAIResponse, type AISegment } from '../../hooks/useAIResponseParser';
 import type { ChatMessage, Theme, ThemeName } from '../../types';
 
 interface AssistPanelProps {
@@ -54,8 +54,27 @@ export function AssistPanel({ theme, themeName, onClose }: AssistPanelProps) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  // Parse each assistant reply once and cache by message id so that
+  // typing in the input doesn't re-parse every prior reply on every
+  // keystroke.
+  const parsedByMessageId = useMemo(() => {
+    const map = new Map<number, AISegment[]>();
+    for (const msg of messages) {
+      if (msg.role === 'assistant') map.set(msg.id, parseAIResponse(msg.content));
+    }
+    return map;
+  }, [messages]);
+
   const sendMessage = async (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || isThinking) return;
     setMessages((prev) => [...prev, { role: 'user', content: text.trim(), id: Date.now() }]);
     setInputText('');
     setIsThinking(true);
@@ -163,9 +182,9 @@ export function AssistPanel({ theme, themeName, onClose }: AssistPanelProps) {
               Ticket templates, naming conventions, meeting agendas, classification rules
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {QUICK_CHIPS.map((chip, i) => (
+              {QUICK_CHIPS.map((chip) => (
                 <div
-                  key={i}
+                  key={chip.label}
                   onClick={() => sendMessage(chip.prompt)}
                   style={{
                     fontSize: '0.6rem',
@@ -186,7 +205,7 @@ export function AssistPanel({ theme, themeName, onClose }: AssistPanelProps) {
         )}
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
-          const segments = !isUser ? parseAIResponse(msg.content) : null;
+          const segments = !isUser ? (parsedByMessageId.get(msg.id) ?? null) : null;
           const hasRich = segments && segments.some((s) => s.type === 'list-item');
           return (
             <div key={msg.id} style={{ marginBottom: 14 }}>
@@ -361,9 +380,9 @@ export function AssistPanel({ theme, themeName, onClose }: AssistPanelProps) {
 
       {messages.length > 0 && !isThinking && (
         <div style={{ padding: '4px 14px 6px', display: 'flex', gap: 6, overflow: 'auto' }}>
-          {QUICK_CHIPS.map((chip, i) => (
+          {QUICK_CHIPS.map((chip) => (
             <div
-              key={i}
+              key={chip.label}
               onClick={() => sendMessage(chip.prompt)}
               style={{
                 fontSize: '0.55rem',

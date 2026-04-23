@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { buildPhone } from './buildPhone';
 import { drawScreen } from './drawScreen';
 
@@ -23,13 +24,16 @@ interface OrbitState {
  */
 export default function ThreeJsCanvasDemo() {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const reducedMotion = useReducedMotion();
+  const reducedMotionRef = useRef(reducedMotion);
+  reducedMotionRef.current = reducedMotion;
   const stateRef = useRef<OrbitState>({
     isDragging: false,
     prev: { x: 0, y: 0 },
     targetRot: { x: -0.15, y: 0.3 },
     currentRot: { x: -0.15, y: 0.3 },
     velocity: { x: 0, y: 0 },
-    autoRotate: true,
+    autoRotate: !reducedMotion,
     zoom: 5.2,
     targetZoom: 5.2,
   });
@@ -50,6 +54,9 @@ export default function ThreeJsCanvasDemo() {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
+    // Stop mobile browsers from hijacking drag gestures to scroll/zoom the
+    // page — we handle orbit via touch events below.
+    renderer.domElement.style.touchAction = 'none';
     container.appendChild(renderer.domElement);
 
     const screenCanvas = document.createElement('canvas');
@@ -138,8 +145,9 @@ export default function ThreeJsCanvasDemo() {
       frameId = requestAnimationFrame(animate);
       const st = stateRef.current;
       const elapsed = clock.getElapsedTime();
+      const reduce = reducedMotionRef.current;
 
-      if (st.autoRotate && !st.isDragging) {
+      if (st.autoRotate && !st.isDragging && !reduce) {
         st.targetRot.y += 0.002;
       }
 
@@ -156,17 +164,19 @@ export default function ThreeJsCanvasDemo() {
 
       phone.rotation.x = st.currentRot.x;
       phone.rotation.y = st.currentRot.y;
-      phone.position.y = Math.sin(elapsed * 0.8) * 0.03;
+      phone.position.y = reduce ? 0 : Math.sin(elapsed * 0.8) * 0.03;
 
       st.zoom += (st.targetZoom - st.zoom) * 0.08;
       camera.position.z = st.zoom;
 
-      const pPositions = particleGeo.attributes.position.array as Float32Array;
-      for (let i = 0; i < particleCount; i++) {
-        pPositions[i * 3 + 1] += Math.sin(elapsed + i) * 0.0005;
+      if (!reduce) {
+        const pPositions = particleGeo.attributes.position.array as Float32Array;
+        for (let i = 0; i < particleCount; i++) {
+          pPositions[i * 3 + 1] += Math.sin(elapsed + i) * 0.0005;
+        }
+        particleGeo.attributes.position.needsUpdate = true;
+        particleMat.opacity = 0.3 + Math.sin(elapsed * 0.5) * 0.15;
       }
-      particleGeo.attributes.position.needsUpdate = true;
-      particleMat.opacity = 0.3 + Math.sin(elapsed * 0.5) * 0.15;
 
       renderer.render(scene, camera);
     };
@@ -192,6 +202,9 @@ export default function ThreeJsCanvasDemo() {
     const onPointerMove = (e: MouseEvent | TouchEvent) => {
       const st = stateRef.current;
       if (!st.isDragging) return;
+      // Prevent the page from scrolling while the user is orbiting on a
+      // touch device. Requires the listener to be non-passive (below).
+      if ('touches' in e && e.cancelable) e.preventDefault();
       const pos = getPos(e);
       const dx = pos.x - st.prev.x;
       const dy = pos.y - st.prev.y;
@@ -217,7 +230,7 @@ export default function ThreeJsCanvasDemo() {
     canvas.addEventListener('mouseup', onPointerUp);
     canvas.addEventListener('mouseleave', onPointerUp);
     canvas.addEventListener('touchstart', onPointerDown, { passive: true });
-    canvas.addEventListener('touchmove', onPointerMove, { passive: true });
+    canvas.addEventListener('touchmove', onPointerMove, { passive: false });
     canvas.addEventListener('touchend', onPointerUp);
     canvas.addEventListener('wheel', onWheel, { passive: true });
 

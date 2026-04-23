@@ -115,9 +115,9 @@ export function DemoOverlay({ subtitle, hint, badges, showHint = true }: DemoOve
           pointerEvents: 'none',
         }}
       >
-        {badges.map((badge, i) => (
+        {badges.map((badge) => (
           <div
-            key={i}
+            key={badge.label}
             style={{
               fontSize: '0.6rem',
               fontWeight: 600,

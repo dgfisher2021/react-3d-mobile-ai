@@ -79,3 +79,20 @@ input::placeholder {
 .think-dot {
   animation: pulseGlow 1.2s ease infinite;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid #319795;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

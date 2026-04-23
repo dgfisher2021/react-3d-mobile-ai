@@ -10,7 +10,6 @@ export interface Theme {
   headers: string;
   muted: string;
   aiBubbleBg: string;
-  userBubbleBg: string;
   chipBg: string;
   navBg: string;
   navBorder: string;

@@ -1,7 +1,8 @@
 import { Float, Html } from '@react-three/drei';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { ThemeName } from '../../types';
 
 interface PhoneMeshProps {
@@ -38,6 +39,7 @@ function roundedRect(w: number, h: number, r: number): THREE.Shape {
 export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
   const bodyRef = useRef<THREE.Mesh>(null);
   const backRef = useRef<THREE.Mesh>(null);
+  const reducedMotion = useReducedMotion();
 
   const bodyGeo = useMemo(() => {
     const geo = new THREE.ExtrudeGeometry(roundedRect(PHONE_W, PHONE_H, CORNER), {
@@ -86,6 +88,18 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
 
   const ringGeo = useMemo(() => new THREE.TorusGeometry(0.08, 0.012, 12, 24), []);
 
+  // Free the GPU buffers for the memoized geometries when this demo is
+  // unmounted (e.g. user tabs to a different demo).
+  useEffect(() => {
+    return () => {
+      bodyGeo.dispose();
+      backGeo.dispose();
+      bezelGeo.dispose();
+      lensGeo.dispose();
+      ringGeo.dispose();
+    };
+  }, [bodyGeo, backGeo, bezelGeo, lensGeo, ringGeo]);
+
   const lensPositions: [number, number][] = [
     [-PHONE_W / 2 + 0.22, PHONE_H / 2 - 0.22],
     [-PHONE_W / 2 + 0.46, PHONE_H / 2 - 0.22],
@@ -93,7 +107,11 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
   ];
 
   return (
-    <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.3}>
+    <Float
+      speed={reducedMotion ? 0 : 1.5}
+      rotationIntensity={reducedMotion ? 0 : 0.1}
+      floatIntensity={reducedMotion ? 0 : 0.3}
+    >
       <group>
         {/* Titanium frame — MeshPhysicalMaterial + clearcoat so the
             <Environment> IBL paints a sharp highlight along the bevel.
