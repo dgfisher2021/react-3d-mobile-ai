@@ -1,5 +1,5 @@
 import { Float, Html } from '@react-three/drei';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
 import type { ThemeName } from '../../types';
@@ -36,6 +36,9 @@ function roundedRect(w: number, h: number, r: number): THREE.Shape {
  * plane — so you can interact with the dashboard in 3D space.
  */
 export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
+  const bodyRef = useRef<THREE.Mesh>(null);
+  const backRef = useRef<THREE.Mesh>(null);
+
   const bodyGeo = useMemo(() => {
     const geo = new THREE.ExtrudeGeometry(roundedRect(PHONE_W, PHONE_H, CORNER), {
       depth: PHONE_D,
@@ -45,6 +48,32 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
       bevelSegments: 4,
       curveSegments: 24,
     });
+    geo.center();
+    return geo;
+  }, []);
+
+  const backGeo = useMemo(() => {
+    const geo = new THREE.ExtrudeGeometry(
+      roundedRect(PHONE_W - 0.03, PHONE_H - 0.03, CORNER - 0.015),
+      {
+        depth: 0.004,
+        bevelEnabled: false,
+        curveSegments: 24,
+      },
+    );
+    geo.center();
+    return geo;
+  }, []);
+
+  const bezelGeo = useMemo(() => {
+    const geo = new THREE.ExtrudeGeometry(
+      roundedRect(PHONE_W - 0.02, PHONE_H - 0.02, CORNER - 0.01),
+      {
+        depth: 0.005,
+        bevelEnabled: false,
+        curveSegments: 24,
+      },
+    );
     geo.center();
     return geo;
   }, []);
@@ -66,9 +95,15 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
   return (
     <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.3}>
       <group>
-        {/* Body */}
-        <mesh geometry={bodyGeo}>
+        {/* Body (titanium frame) */}
+        <mesh ref={bodyRef} geometry={bodyGeo}>
           <meshStandardMaterial color="#2a2a30" metalness={0.85} roughness={0.28} />
+        </mesh>
+
+        {/* Black glass bezel behind the screen — opaque so Html occlusion
+            can latch onto it and so the back never peeks through the front. */}
+        <mesh geometry={bezelGeo} position={[0, 0, PHONE_D / 2 + 0.003]}>
+          <meshStandardMaterial color="#050508" metalness={0.1} roughness={0.6} />
         </mesh>
 
         {/* Dynamic island */}
@@ -107,15 +142,21 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
           </group>
         ))}
 
-        {/* Back glass */}
-        <mesh position={[0, 0, -PHONE_D / 2 - 0.001]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[PHONE_W - 0.03, PHONE_H - 0.03]} />
+        {/* Back glass — a thin rounded slab, not a plane, so it's a real
+            occluder with a proper back-facing surface from every angle. */}
+        <mesh ref={backRef} geometry={backGeo} position={[0, 0, -PHONE_D / 2 - 0.002]}>
           <meshStandardMaterial color="#1c1c22" metalness={0.15} roughness={0.55} />
         </mesh>
 
-        {/* Live interactive screen via drei Html (transform) */}
+        {/* Live interactive screen via drei Html (transform).
+            `occlude` raycasts against the body + back so the DOM element is
+            hidden whenever the phone is between the camera and the screen;
+            `backfaceVisibility: hidden` also hides the mirrored DOM when you
+            orbit past 90° — together they stop the dashboard bleeding through
+            the back of the phone. */}
         <Html
           transform
+          occlude={[bodyRef, backRef]}
           position={[0, 0, PHONE_D / 2 + 0.03]}
           distanceFactor={1.35}
           style={{
@@ -124,6 +165,8 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
             borderRadius: 34,
             overflow: 'hidden',
             clipPath: 'inset(0 round 34px)',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
           }}
         >
           <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />

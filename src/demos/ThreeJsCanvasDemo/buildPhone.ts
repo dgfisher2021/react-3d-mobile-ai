@@ -61,25 +61,64 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
   bezelMesh.position.z = d / 2 + 0.003;
   group.add(bezelMesh);
 
-  // Screen plane with dashboard texture
+  // Screen plane with dashboard texture. Opaque — the canvas is already
+  // opaque inside the rounded rect, and `transparent: true` was enabling
+  // alpha blending against the dark bezel which produced a milky film.
   const screenW = w - bezel * 2;
   const screenH = h - bezel * 2;
   const screenGeo = new THREE.PlaneGeometry(screenW, screenH, 1, 1);
   const screenMat = new THREE.MeshBasicMaterial({
     map: screenTexture,
     toneMapped: false,
-    transparent: true,
   });
   const screen = new THREE.Mesh(screenGeo, screenMat);
   screen.position.z = d / 2 + 0.012;
   group.add(screen);
 
-  // Dynamic island pill overlayed on the screen
+  // Glass reflection overlay — a faint diagonal highlight baked into a
+  // canvas, composited on top of the screen with additive blending. This is
+  // what gives the Three.js demo the same glossy feel as the CSS3D demo.
+  const glossCanvas = document.createElement('canvas');
+  glossCanvas.width = 256;
+  glossCanvas.height = 512;
+  const gctx = glossCanvas.getContext('2d');
+  if (gctx) {
+    gctx.clearRect(0, 0, 256, 512);
+    const hi = gctx.createLinearGradient(0, 0, 256, 512);
+    hi.addColorStop(0, 'rgba(255,255,255,0.16)');
+    hi.addColorStop(0.35, 'rgba(255,255,255,0.02)');
+    hi.addColorStop(0.6, 'rgba(255,255,255,0)');
+    hi.addColorStop(0.85, 'rgba(255,255,255,0.02)');
+    hi.addColorStop(1, 'rgba(255,255,255,0.06)');
+    gctx.fillStyle = hi;
+    gctx.fillRect(0, 0, 256, 512);
+    // Soft hotspot near top-left for the "sheen" pop.
+    const hot = gctx.createRadialGradient(60, 90, 0, 60, 90, 180);
+    hot.addColorStop(0, 'rgba(255,255,255,0.22)');
+    hot.addColorStop(1, 'rgba(255,255,255,0)');
+    gctx.fillStyle = hot;
+    gctx.fillRect(0, 0, 256, 512);
+  }
+  const glossTex = new THREE.CanvasTexture(glossCanvas);
+  glossTex.colorSpace = THREE.SRGBColorSpace;
+  glossTex.needsUpdate = true;
+  const glossMat = new THREE.MeshBasicMaterial({
+    map: glossTex,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const gloss = new THREE.Mesh(screenGeo, glossMat);
+  gloss.position.z = d / 2 + 0.014;
+  group.add(gloss);
+
+  // Dynamic island pill overlayed on top of everything on the screen.
   const islandShape = roundedRect(island.w, island.h, island.h / 2);
   const islandGeo = new THREE.ShapeGeometry(islandShape, 16);
   const islandMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const islandMesh = new THREE.Mesh(islandGeo, islandMat);
-  islandMesh.position.set(0, island.y, d / 2 + 0.013);
+  islandMesh.position.set(0, island.y, d / 2 + 0.0155);
   group.add(islandMesh);
 
   // Side buttons
