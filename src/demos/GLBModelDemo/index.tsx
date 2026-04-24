@@ -24,11 +24,11 @@ import { useSettingsContext } from '../../context/SettingsContext';
 import { DeviceModel, type ModelInfo } from './DeviceModel';
 import { DEVICES, getDefaultOverrides, type ModelOverrides } from './deviceConfigs';
 
-export default function GLBModelDemo() {
+export default function GLBModelDemo({ defaultDevice }: { defaultDevice?: string }) {
   const { themeName, toggleTheme, autoRotate, setAutoRotate, activePreset, setActivePreset } =
     useDemoContext();
   const { showScreen } = useSettingsContext();
-  const [deviceId, setDeviceId] = useState('iphone');
+  const [deviceId, setDeviceId] = useState(defaultDevice ?? 'iphone');
   const [overrides, setOverrides] = useState<Record<string, ModelOverrides>>({});
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const [glbScene, setGlbScene] = useState<THREE.Object3D | null>(null);

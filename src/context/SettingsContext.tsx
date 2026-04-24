@@ -40,10 +40,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [showScreen, setShowScreen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const [screenWidth, setScreenWidth] = useState(SCREEN.width);
-  const [screenHeight, setScreenHeight] = useState(SCREEN.height);
-  const [cornerRadius, setCornerRadius] = useState(SCREEN.cornerRadius);
-  const [distanceFactor, setDistanceFactor] = useState(SCREEN.distanceFactor);
+  const [screenWidth, setScreenWidth] = useState<number>(SCREEN.width);
+  const [screenHeight, setScreenHeight] = useState<number>(SCREEN.height);
+  const [cornerRadius, setCornerRadius] = useState<number>(SCREEN.cornerRadius);
+  const [distanceFactor, setDistanceFactor] = useState<number>(SCREEN.distanceFactor);
 
   const resetDisplay = useCallback(() => {
     setScreenWidth(SCREEN.width);

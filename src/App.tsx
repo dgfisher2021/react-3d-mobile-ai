@@ -26,14 +26,24 @@ const TABS: DemoTab[] = [
     blurb: 'react-three-fiber with drei <Html transform> portaling the live app.',
   },
   {
-    id: 'glb',
-    label: 'GLB Models · Live',
-    blurb: 'Pre-made 3D device models with the live React app on each screen.',
+    id: 'iphone',
+    label: 'iPhone 13 Pro',
+    blurb: 'GLB model with auto-sized screen overlay and retina rendering.',
+  },
+  {
+    id: 'macbook',
+    label: 'MacBook Pro',
+    blurb: 'GLB laptop model with tilted screen and auto-rotation.',
+  },
+  {
+    id: 'glb-other',
+    label: 'More Devices',
+    blurb: 'iMac, iPad Pro, and Office Monitor GLB models.',
   },
 ];
 
 export default function App() {
-  const [active, setActive] = useState<string>('glb');
+  const [active, setActive] = useState<string>('iphone');
 
   return (
     <DemoProvider>
@@ -43,7 +53,9 @@ export default function App() {
             {active === 'threejs' && <ThreeJsCanvasDemo />}
             {active === 'css3d' && <CSS3DDemo />}
             {active === 'r3f' && <R3FDemo />}
-            {active === 'glb' && <GLBModelDemo />}
+            {active === 'iphone' && <GLBModelDemo key="iphone" defaultDevice="iphone" />}
+            {active === 'macbook' && <GLBModelDemo key="macbook" defaultDevice="macbook" />}
+            {active === 'glb-other' && <GLBModelDemo key="other" />}
           </Suspense>
           <DemoTabs tabs={TABS} activeId={active} onChange={setActive} />
         </div>

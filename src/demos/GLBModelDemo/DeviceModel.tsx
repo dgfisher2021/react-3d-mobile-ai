@@ -100,10 +100,11 @@ export function DeviceModel({
         }
       }
     });
-    if (screenMesh) {
-      screenMeshRef.current = screenMesh;
+    const foundMesh = screenMesh as THREE.Mesh | null;
+    if (foundMesh) {
+      screenMeshRef.current = foundMesh;
       // Set wallpaper to black immediately to avoid blue texture flash on load
-      const mat = screenMesh.material as THREE.MeshStandardMaterial;
+      const mat = foundMesh.material as THREE.MeshStandardMaterial;
       mat.color.set(0x000000);
       mat.map = null;
       mat.needsUpdate = true;
