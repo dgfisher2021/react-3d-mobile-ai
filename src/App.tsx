@@ -33,7 +33,7 @@ const TABS: DemoTab[] = [
 ];
 
 export default function App() {
-  const [active, setActive] = useState<string>('r3f');
+  const [active, setActive] = useState<string>('glb');
 
   return (
     <DemoProvider>

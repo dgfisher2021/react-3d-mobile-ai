@@ -22,8 +22,8 @@ export function useDemoContext(): DemoContextType {
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [themeName, setThemeName] = useState<ThemeName>('dark');
-  const [autoRotate, setAutoRotate] = useState(true);
-  const [activePreset, setActivePreset] = useState<number | null>(null);
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [activePreset, setActivePreset] = useState<number | null>(0);
 
   const toggleTheme = useCallback(() => setThemeName((t) => (t === 'dark' ? 'light' : 'dark')), []);
 
