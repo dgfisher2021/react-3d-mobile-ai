@@ -402,7 +402,7 @@ export function buildInitialLayerState(scene: THREE.Object3D): MeshLayerMap {
   const map: MeshLayerMap = {};
   scene.traverse((obj) => {
     if ((obj as THREE.Mesh).isMesh) {
-      map[obj.uuid] = { visible: true, showBBox: false };
+      map[obj.uuid] = { visible: true, showBBox: obj.name === 'Body_Wallpaper_0' };
     }
   });
   return map;

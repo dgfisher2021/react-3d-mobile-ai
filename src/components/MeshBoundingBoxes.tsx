@@ -146,13 +146,11 @@ export function MeshBoundingBoxes({ scene, layerState }: MeshBoundingBoxesProps)
       box.getSize(size);
       box.getCenter(center);
 
-      result.push({
-        uuid: obj.uuid,
-        box,
-        color: getMeshColor(scene, obj.uuid),
-        size,
-        center,
-      });
+      const color = getMeshColor(scene, obj.uuid);
+      console.log(
+        `[BBox] "${obj.name}" size: ${size.x.toFixed(4)} x ${size.y.toFixed(4)} x ${size.z.toFixed(4)} | center: ${center.x.toFixed(4)}, ${center.y.toFixed(4)}, ${center.z.toFixed(4)}`,
+      );
+      result.push({ uuid: obj.uuid, box, color, size, center });
     });
 
     return result;

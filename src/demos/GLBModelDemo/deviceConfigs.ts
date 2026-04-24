@@ -42,7 +42,7 @@ export const DEVICES: DeviceConfig[] = [
     label: 'iPhone 13 Pro',
     glbPath: `${base}apple_iphone_13_pro_max.glb`,
     screenNode: 'Body_Wallpaper_0',
-    htmlPosition: [0, 0, 0.002],
+    htmlPosition: [0, 0, -0.025],
     htmlRotation: [0, 0, 0],
     htmlSize: { width: 393, height: 852 },
     distanceFactor: 1.5,

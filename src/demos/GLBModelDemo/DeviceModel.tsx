@@ -1,4 +1,5 @@
 import { Float, Html, useGLTF } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
@@ -47,6 +48,7 @@ export function DeviceModel({
   const { scene } = useGLTF(config.glbPath);
   const groupRef = useRef<THREE.Group>(null);
   const screenMeshRef = useRef<THREE.Mesh | null>(null);
+  const bodyMeshRef = useRef<THREE.Mesh>(null!);
   const reducedMotion = useReducedMotion();
   const { cornerRadius: ctxCornerRadius } = useSettingsContext();
   const [screenCenter, setScreenCenter] = useState<THREE.Vector3 | null>(null);
@@ -56,6 +58,7 @@ export function DeviceModel({
     htmlWidth: number;
     htmlHeight: number;
   } | null>(null);
+  const [measured, setMeasured] = useState(false);
 
   // Compute scale factor and bounding box info
   const { normalizeScale, bbox } = useMemo(() => {
@@ -69,71 +72,24 @@ export function DeviceModel({
     };
   }, [scene]);
 
-  // After mount: find the screen mesh and compute its world-space center
+  const actualScale = overrides?.scale && overrides.scale > 0 ? overrides.scale : normalizeScale;
+
+  // Find the screen mesh once on mount
   useEffect(() => {
     if (!groupRef.current) return;
-    groupRef.current.updateMatrixWorld(true);
-
     let screenMesh: THREE.Mesh | null = null;
     groupRef.current.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh && child.name === config.screenNode) {
-        screenMesh = child as THREE.Mesh;
+      if ((child as THREE.Mesh).isMesh) {
+        if (child.name === config.screenNode) {
+          screenMesh = child as THREE.Mesh;
+        }
+        if (child.name === 'Body_Body_0') {
+          bodyMeshRef.current = child as THREE.Mesh;
+        }
       }
     });
-
     if (screenMesh) {
       screenMeshRef.current = screenMesh;
-
-      // Use Box3.setFromObject only for world-space CENTER position
-      const screenBox = new THREE.Box3().setFromObject(screenMesh);
-      const center = new THREE.Vector3();
-      const size = new THREE.Vector3();
-      screenBox.getCenter(center);
-      screenBox.getSize(size);
-      setScreenCenter(center.clone());
-      setScreenWorldSize(size.clone());
-
-      // Use geometry's local bounding box + world scale for exact dimensions.
-      // Box3.setFromObject gives axis-aligned bounds which can be slightly
-      // inaccurate after rotation. The geometry's local X is always width
-      // and Y is always height for a screen quad, so no sorting needed.
-      screenMesh.geometry.computeBoundingBox();
-      const geoBBox = screenMesh.geometry.boundingBox!;
-      const geoSize = new THREE.Vector3();
-      geoBBox.getSize(geoSize);
-
-      const worldScale = new THREE.Vector3();
-      screenMesh.getWorldScale(worldScale);
-
-      const actualW = geoSize.x * Math.abs(worldScale.x);
-      const actualH = geoSize.y * Math.abs(worldScale.y);
-
-      const BASE_CSS_WIDTH = 393;
-      const autoDF = actualW;
-      const autoHeight = Math.round(BASE_CSS_WIDTH * (actualH / actualW));
-
-      // Debug: log geometry size, world scale, and final dimensions
-      // eslint-disable-next-line no-console
-      console.log(
-        `[GLB] Screen "${config.screenNode}" geoSize: x=${geoSize.x.toFixed(4)}, y=${geoSize.y.toFixed(4)}, z=${geoSize.z.toFixed(4)}` +
-          ` | worldScale: x=${worldScale.x.toFixed(4)}, y=${worldScale.y.toFixed(4)}, z=${worldScale.z.toFixed(4)}` +
-          ` | actualW=${actualW.toFixed(4)}, actualH=${actualH.toFixed(4)}` +
-          ` | distanceFactor=${autoDF.toFixed(4)}, htmlHeight=${autoHeight}`,
-      );
-
-      setAutoScreenDims({
-        distanceFactor: autoDF,
-        htmlWidth: BASE_CSS_WIDTH,
-        htmlHeight: autoHeight,
-      });
-
-      onModelInfo?.({
-        boundingBox: bbox,
-        normalizeScale,
-        screenCenter: [center.x, center.y, center.z],
-        screenSize: { w: actualW, h: actualH },
-        distanceFactor: autoDF,
-      });
     } else {
       console.warn(`[GLB] Screen node "${config.screenNode}" not found`);
       onModelInfo?.({
@@ -144,27 +100,88 @@ export function DeviceModel({
         distanceFactor: config.distanceFactor,
       });
     }
-  }, [
-    config.id,
-    config.screenNode,
-    config.portrait,
-    config.distanceFactor,
-    normalizeScale,
-    bbox,
-    onModelInfo,
-  ]);
+  }, [config.id, config.screenNode, normalizeScale, bbox, config.distanceFactor, onModelInfo]);
 
-  // Toggle screen material transparency
+  // Compute screen size ONCE from geometry (stable, unaffected by Float).
+  // Use geometry.computeBoundingBox for the local mesh dimensions,
+  // then multiply by world scale for world-space size.
+  // Compute center in scene-local space so Html (inside the same group) aligns.
+  useEffect(() => {
+    const mesh = screenMeshRef.current;
+    if (!mesh || !groupRef.current) return;
+    groupRef.current.updateMatrixWorld(true);
+
+    // Stable size from geometry (doesn't change with Float)
+    mesh.geometry.computeBoundingBox();
+    const geoSize = new THREE.Vector3();
+    mesh.geometry.boundingBox!.getSize(geoSize);
+    const worldScale = new THREE.Vector3();
+    mesh.getWorldScale(worldScale);
+    const worldW = geoSize.x * Math.abs(worldScale.x);
+    const worldH = geoSize.y * Math.abs(worldScale.y);
+
+    // Center in scene-local space
+    const invMatrix = new THREE.Matrix4().copy(scene.matrixWorld).invert();
+    const worldCenter = new THREE.Vector3();
+    mesh.getWorldPosition(worldCenter);
+    const localCenter = worldCenter.applyMatrix4(invMatrix);
+    console.log(
+      `[Pos] localCenter: x=${localCenter.x.toFixed(4)} y=${localCenter.y.toFixed(4)} z=${localCenter.z.toFixed(4)}`,
+    );
+
+    // Slight oversize (1.02x) to cover axis-aligned bbox edge cases
+    const OVERSIZE = 1.0; // Testing: no oversize, Float disabled during measurement
+    const BASE_CSS_WIDTH = 393;
+    const screenW = worldW * OVERSIZE;
+    const screenH = worldH * OVERSIZE;
+    const autoHeight = Math.round(BASE_CSS_WIDTH * (screenH / screenW));
+    // drei source: CSS pixel scale = worldScale * (DF / 400)
+    // For cssWidth pixels to cover screenW world units:
+    //   cssWidth * worldScale * (DF / 400) = screenW
+    //   DF = screenW * 400 / (cssWidth * worldScale)
+    // worldScale = actualScale (the group's scale)
+    const localDF = (screenW * 400) / (BASE_CSS_WIDTH * actualScale);
+
+    // Also log Box3 for comparison
+    const box3Size = new THREE.Vector3();
+    new THREE.Box3().setFromObject(mesh).getSize(box3Size);
+    console.log(
+      `[Screen] geo: ${geoSize.x.toFixed(4)} x ${geoSize.y.toFixed(4)}` +
+        ` | geoWorld: ${worldW.toFixed(4)} x ${worldH.toFixed(4)}` +
+        ` | box3: ${box3Size.x.toFixed(4)} x ${box3Size.y.toFixed(4)} x ${box3Size.z.toFixed(4)}` +
+        ` | oversize=${OVERSIZE} → ${screenW.toFixed(4)} x ${screenH.toFixed(4)}` +
+        ` | localDF=${localDF.toFixed(4)}, htmlHeight=${autoHeight}` +
+        ` | actualScale=${actualScale.toFixed(4)}, worldScaleX=${Math.abs(worldScale.x).toFixed(4)}`,
+    );
+
+    setScreenCenter(localCenter.clone());
+    setAutoScreenDims({
+      distanceFactor: localDF,
+      htmlWidth: BASE_CSS_WIDTH,
+      htmlHeight: autoHeight,
+    });
+    setScreenWorldSize(new THREE.Vector3(screenW, screenH, 0));
+    onModelInfo?.({
+      boundingBox: bbox,
+      normalizeScale,
+      screenCenter: [localCenter.x, localCenter.y, localCenter.z],
+      screenSize: { w: screenW, h: screenH },
+      distanceFactor: localDF,
+    });
+    setMeasured(true);
+  }, [config.id, config.screenNode, normalizeScale, bbox, actualScale, scene, onModelInfo]);
+
+  // When screen overlay is on, make wallpaper opaque black (not transparent).
+  // This keeps depth buffer writes so occlude="blending" can hide the Html
+  // when viewing from behind.
   useEffect(() => {
     const mesh = screenMeshRef.current;
     if (!mesh) return;
     const mat = mesh.material as THREE.MeshStandardMaterial;
     if (showScreen) {
-      mat.opacity = 0;
-      mat.transparent = true;
-    } else {
-      mat.opacity = 1;
-      mat.transparent = false;
+      mat.color.set(0x000000);
+      mat.map = null;
+      mat.needsUpdate = true;
     }
   }, [showScreen]);
 
@@ -186,54 +203,53 @@ export function DeviceModel({
     });
   }, [scene, meshLayers]);
 
-  // Screen sizing: use auto-computed values from mesh geometry, fall back to config
-
-  // Convert from actual values to Three.js inputs
-  // scale: if overrides.scale is 0 (default/unset), use normalizeScale * 1
-  const actualScale = overrides?.scale && overrides.scale > 0 ? overrides.scale : normalizeScale;
   const pos = overrides?.position ?? [0, 0, 0];
   const rot = overrides?.rotation ?? [0, 0, 0];
   const screenPos = overrides?.screenPosition ?? config.htmlPosition;
 
   return (
     <Float
-      speed={reducedMotion ? 0 : FLOAT.speed}
-      rotationIntensity={reducedMotion ? 0 : FLOAT.rotationIntensity}
-      floatIntensity={reducedMotion ? 0 : FLOAT.floatIntensity}
+      speed={!measured || reducedMotion ? 0 : FLOAT.speed}
+      rotationIntensity={!measured || reducedMotion ? 0 : FLOAT.rotationIntensity}
+      floatIntensity={!measured || reducedMotion ? 0 : FLOAT.floatIntensity}
     >
       <group position={pos} rotation={[rot[0] * DEG2RAD, rot[1] * DEG2RAD, rot[2] * DEG2RAD]}>
         <group ref={groupRef} scale={actualScale} rotation={config.modelRotation}>
           <primitive object={scene} />
-        </group>
 
-        {showScreen && screenCenter && (
-          <Html
-            transform
-            occlude="blending"
-            position={[
-              screenCenter.x + screenPos[0],
-              screenCenter.y + screenPos[1],
-              screenCenter.z + screenPos[2],
-            ]}
-            rotation={config.htmlRotation}
-            distanceFactor={autoScreenDims?.distanceFactor ?? config.distanceFactor}
-            style={{
-              width: autoScreenDims?.htmlWidth ?? config.htmlSize.width,
-              height: autoScreenDims?.htmlHeight ?? config.htmlSize.height,
-              borderRadius: config.portrait ? ctxCornerRadius : 8,
-              overflow: 'hidden',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-            }}
-          >
-            <div
-              onPointerDown={(e) => e.stopPropagation()}
-              style={{ width: '100%', height: '100%' }}
+          {showScreen && screenCenter && (
+            <Html
+              transform
+              occlude="blending"
+              position={[
+                screenCenter.x + screenPos[0],
+                screenCenter.y + screenPos[1],
+                screenCenter.z + screenPos[2],
+              ]}
+              rotation={config.htmlRotation}
+              distanceFactor={autoScreenDims?.distanceFactor ?? config.distanceFactor}
+              style={{
+                width: autoScreenDims?.htmlWidth ?? config.htmlSize.width,
+                height: autoScreenDims?.htmlHeight ?? config.htmlSize.height,
+                borderRadius: config.portrait ? ctxCornerRadius : 8,
+                overflow: 'hidden',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+              }}
             >
-              <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
-            </div>
-          </Html>
-        )}
+              <div
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  transform: config.modelRotation[1] !== 0 ? 'scaleX(-1)' : undefined,
+                }}
+              >
+                <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
+              </div>
+            </Html>
+          )}
+        </group>
       </group>
     </Float>
   );
