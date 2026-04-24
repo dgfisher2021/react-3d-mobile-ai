@@ -79,6 +79,7 @@ export function DeviceModel({
     if (screenMesh) {
       screenMeshRef.current = screenMesh;
 
+      // Use Box3.setFromObject only for world-space CENTER position
       const screenBox = new THREE.Box3().setFromObject(screenMesh);
       const center = new THREE.Vector3();
       const size = new THREE.Vector3();
@@ -87,16 +88,33 @@ export function DeviceModel({
       setScreenCenter(center.clone());
       setScreenWorldSize(size.clone());
 
-      // Auto-compute screen dimensions from mesh geometry.
-      // The mesh bounding box has 3 dimensions — the smallest is depth
-      // (thickness of the screen quad). The other two are width and height.
-      const dims = [size.x, size.y, size.z].sort((a, b) => b - a);
-      // dims[0] = largest (height for portrait), dims[1] = second (width), dims[2] = depth
-      const screenW = config.portrait ? dims[1] : dims[0];
-      const screenH = config.portrait ? dims[0] : dims[1];
+      // Use geometry's local bounding box + world scale for exact dimensions.
+      // Box3.setFromObject gives axis-aligned bounds which can be slightly
+      // inaccurate after rotation. The geometry's local X is always width
+      // and Y is always height for a screen quad, so no sorting needed.
+      screenMesh.geometry.computeBoundingBox();
+      const geoBBox = screenMesh.geometry.boundingBox!;
+      const geoSize = new THREE.Vector3();
+      geoBBox.getSize(geoSize);
+
+      const worldScale = new THREE.Vector3();
+      screenMesh.getWorldScale(worldScale);
+
+      const actualW = geoSize.x * Math.abs(worldScale.x);
+      const actualH = geoSize.y * Math.abs(worldScale.y);
+
       const BASE_CSS_WIDTH = 393;
-      const autoDF = screenW;
-      const autoHeight = Math.round(BASE_CSS_WIDTH * (screenH / screenW));
+      const autoDF = actualW;
+      const autoHeight = Math.round(BASE_CSS_WIDTH * (actualH / actualW));
+
+      // Debug: log geometry size, world scale, and final dimensions
+      // eslint-disable-next-line no-console
+      console.log(
+        `[GLB] Screen "${config.screenNode}" geoSize: x=${geoSize.x.toFixed(4)}, y=${geoSize.y.toFixed(4)}, z=${geoSize.z.toFixed(4)}` +
+          ` | worldScale: x=${worldScale.x.toFixed(4)}, y=${worldScale.y.toFixed(4)}, z=${worldScale.z.toFixed(4)}` +
+          ` | actualW=${actualW.toFixed(4)}, actualH=${actualH.toFixed(4)}` +
+          ` | distanceFactor=${autoDF.toFixed(4)}, htmlHeight=${autoHeight}`,
+      );
 
       setAutoScreenDims({
         distanceFactor: autoDF,
@@ -108,7 +126,7 @@ export function DeviceModel({
         boundingBox: bbox,
         normalizeScale,
         screenCenter: [center.x, center.y, center.z],
-        screenSize: { w: screenW, h: screenH },
+        screenSize: { w: actualW, h: actualH },
         distanceFactor: autoDF,
       });
     } else {
