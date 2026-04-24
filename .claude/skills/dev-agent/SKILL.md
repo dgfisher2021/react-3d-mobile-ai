@@ -109,3 +109,14 @@ This is a **portfolio piece**. Visual quality and consistency matter. The user i
 4. Getting it right, not getting it fast
 
 Every decision should serve these goals.
+
+## Keeping this skill alive
+
+The reference files contain technical specifics that go stale. When you complete work that changes the project's architecture, state management, React version, or key patterns:
+
+1. Update `references/technical-patterns.md` with the new state
+2. Add new anti-patterns to `references/anti-patterns.md` if you discovered them
+3. Update `references/delegation-rules.md` if you learned something about working with agents
+4. Do NOT update `references/working-with-user.md` unless the user explicitly tells you to — that's their style, not yours to change
+
+Commit reference updates alongside your feature work. The next session should find accurate information, not stale snapshots.
