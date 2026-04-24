@@ -3,15 +3,28 @@ export interface ModelOverrides {
   rotation: [number, number, number]; // actual rotation in degrees
   scale: number; // actual applied scale (normalizeScale * multiplier)
   screenPosition: [number, number, number]; // actual screen world position
+  htmlRotation: [number, number, number]; // screen overlay rotation in degrees
 }
 
 export function getDefaultOverrides(config: DeviceConfig): ModelOverrides {
-  return {
+  const defaults: ModelOverrides = {
     position: [0, 0, 0],
     rotation: [0, 0, 0],
     scale: 0, // 0 means "use normalizeScale * 1" (computed after mount)
     screenPosition: config.htmlPosition,
+    htmlRotation: [
+      config.htmlRotation[0] * (180 / Math.PI),
+      config.htmlRotation[1] * (180 / Math.PI),
+      config.htmlRotation[2] * (180 / Math.PI),
+    ],
   };
+
+  if (config.id === 'macbook') {
+    defaults.position = [0, -0.5, 0];
+    defaults.scale = 0.25;
+  }
+
+  return defaults;
 }
 
 export interface DeviceConfig {
@@ -54,8 +67,8 @@ export const DEVICES: DeviceConfig[] = [
     label: 'MacBook Pro',
     glbPath: `${base}macbook.glb`,
     screenNode: 'Cube008_2',
-    htmlPosition: [0, 0, 0],
-    htmlRotation: [-Math.PI / 2, 0, 0],
+    htmlPosition: [0, 2, 0.04],
+    htmlRotation: [(0.8 * Math.PI) / 180, 0, 0],
     htmlSize: { width: 668, height: 432 },
     distanceFactor: 1.5,
     modelRotation: [0, 0, 0],

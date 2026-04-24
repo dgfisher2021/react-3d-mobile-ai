@@ -360,6 +360,12 @@ export function SettingsPanel({
                 step={0.001}
                 onChange={(v) => onOverridesChange({ ...overrides, screenPosition: v })}
               />
+              <Vec3Input
+                label="Screen Rotation (deg)"
+                value={overrides.htmlRotation}
+                step={1}
+                onChange={(v) => onOverridesChange({ ...overrides, htmlRotation: v })}
+              />
 
               {/* Read-only computed values */}
               {modelInfo && (

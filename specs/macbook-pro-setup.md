@@ -213,3 +213,81 @@ So `geoSize.y * worldScale.y` gives the WRONG dimension. The screen height is ac
 ### Spec author's anti-pattern added
 
 "Always check user-provided screenshots for tuned values before writing a spec. The user did the work — don't make the agent redo it."
+
+---
+
+## Implementation Results
+
+### Final config values
+
+```typescript
+// MacBook Pro in deviceConfigs.ts
+{
+  id: 'macbook',
+  screenNode: 'Cube008_2',
+  htmlPosition: [0, 2, 0.04],           // Y=2 to offset auto-center bug, Z=0.04 to clear model surface
+  htmlRotation: [(0.8 * Math.PI) / 180, 0, 0],  // 0.8° X — matches screenflip parent tilt
+  modelRotation: [0, 0, 0],             // MacBook already faces camera
+  portrait: false,
+}
+
+// MacBook default overrides in getDefaultOverrides()
+{
+  position: [0, -0.5, 0],  // user-tuned model position
+  scale: 0.25,              // user-tuned scale (normalizeScale 0.3404 was too large)
+}
+```
+
+### Why these values
+
+- **modelRotation [0,0,0]**: MacBook faces camera by default (unlike iPhone which needs Y=PI flip)
+- **htmlRotation 0.8°**: The screen mesh's parent "screenflip" has rotation X=0.014 rad (0.8°). The Html is NOT inside the GLB's rotated group hierarchy — it's a sibling of `<primitive>`, so it doesn't inherit the internal PI/2 X rotation. The PI/2 rotation puts the screen into XY plane (matching Html default), but the 0.8° tilt remains.
+- **htmlPosition Y=2**: Workaround for auto-positioning bug (see open issues)
+- **htmlPosition Z=0.04**: Brings overlay in front of model surface to avoid z-fighting
+- **scale 0.25**: MacBook bounding box (8.814) includes keyboard/base, making normalizeScale too large
+
+### Screen mesh geometry (from GLB inspection)
+
+```
+geoSize (local): 8.3007, 0.0000, 5.3729   ← Y is ZERO (flat plane in XZ)
+Box3 world size: 8.3007, 5.3724, 0.0775   ← correct after parent rotations
+worldEuler (deg): X=90.8, Y=0, Z=0
+Parent hierarchy: Cube008_2 → screen (rot 90° X) → screenflip (rot 0.8° X) → Scene
+```
+
+### Auto-sizing fix
+
+**Bug**: `worldH = geoSize.y * worldScale.y` gave 0 for MacBook because the screen mesh is in the XZ plane locally (Y=0). The parent's PI/2 X rotation swaps Y↔Z but `getWorldScale()` returns scale magnitudes, not rotated axes.
+
+**Fix**: Replaced `geometry.computeBoundingBox * getWorldScale` with `Box3.setFromObject(mesh)`. Box3 gives world-space axis-aligned bounds that correctly account for parent rotations. Using `worldSizeVec.x` for width and `worldSizeVec.y` for height (screens face -Z toward camera, so X/Y are always width/height in world space).
+
+**iPhone verification**: Box3 approach gives identical results to the old approach for iPhone (W=0.4440, H=0.9540, autoH=1689). No regression.
+
+### Changes made
+
+**deviceConfigs.ts**:
+- Added `htmlRotation` field to `ModelOverrides` interface
+- Updated `getDefaultOverrides()` to initialize `htmlRotation` from config (converted to degrees)
+- Added MacBook-specific defaults (position Y=-0.5, scale 0.25)
+- Updated MacBook config: htmlPosition, htmlRotation values
+
+**DeviceModel.tsx**:
+- Replaced `geometry.computeBoundingBox * getWorldScale` with `Box3.setFromObject` for screen size computation
+- Added `htmlRot` variable that reads from overrides (degrees→radians) with fallback to config
+- Changed `<Html rotation={}>` to use `htmlRot` instead of `config.htmlRotation`
+- Added console log for screen size and center diagnostics
+
+**SettingsPanel.tsx**:
+- Added Vec3Input for "Screen Rotation (deg)" in the Model section
+
+### Device verification
+
+- **iPhone**: Screen overlay works correctly — sizing, position, occlusion, retina all unchanged
+- **MacBook**: Screen overlay visible and readable with user's tuned values
+- **Settings panel**: Screen Rotation input appears for both devices
+
+### Open issues
+
+1. **Auto-positioning bug**: The auto-computed `screenCenter` (via `mesh.getWorldPosition` → scene-local space) doesn't place the Html at the Cube008_2 mesh location. User needs `htmlPosition Y=2` as a workaround. The center computation returns Y≈2.929 in groupRef space but the screen visually needs Y≈4.929. Root cause not yet identified — may be related to how `scene.matrixWorld.invert()` interacts with the parent group chain during the measurement useEffect.
+
+2. **Dashboard is phone-shaped on laptop screen**: The LiveDashboard renders at 393px wide (portrait phone layout) on the MacBook's landscape screen. Acceptable for now per spec — would need a responsive dashboard layout for a proper fix.

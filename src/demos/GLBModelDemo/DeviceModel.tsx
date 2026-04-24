@@ -103,29 +103,34 @@ export function DeviceModel({
     }
   }, [config.id, config.screenNode, normalizeScale, bbox, config.distanceFactor, onModelInfo]);
 
-  // Compute screen size ONCE from geometry (stable, unaffected by Float).
-  // Use geometry.computeBoundingBox for the local mesh dimensions,
-  // then multiply by world scale for world-space size.
+  // Compute screen size ONCE (stable, unaffected by Float).
+  // Uses Box3.setFromObject for world-space dimensions — handles parent rotations
+  // that swap axes (e.g. MacBook screen mesh with parent rotation X=90°).
   // Compute center in scene-local space so Html (inside the same group) aligns.
   useEffect(() => {
     const mesh = screenMeshRef.current;
     if (!mesh || !groupRef.current) return;
     groupRef.current.updateMatrixWorld(true);
 
-    // Stable size from geometry (doesn't change with Float)
-    mesh.geometry.computeBoundingBox();
-    const geoSize = new THREE.Vector3();
-    mesh.geometry.boundingBox!.getSize(geoSize);
-    const worldScale = new THREE.Vector3();
-    mesh.getWorldScale(worldScale);
-    const worldW = geoSize.x * Math.abs(worldScale.x);
-    const worldH = geoSize.y * Math.abs(worldScale.y);
+    // Use Box3.setFromObject for world-space dimensions.
+    // The geoSize * worldScale approach breaks when parent rotations swap axes
+    // (e.g. MacBook screen mesh has parent rotation X=90°, making geoSize.y = 0).
+    // Box3 world-space X = width, Y = height (screens face -Z toward camera).
+    const worldBox = new THREE.Box3().setFromObject(mesh);
+    const worldSizeVec = new THREE.Vector3();
+    worldBox.getSize(worldSizeVec);
+    const worldW = worldSizeVec.x;
+    const worldH = worldSizeVec.y;
 
     // Center in scene-local space
     const invMatrix = new THREE.Matrix4().copy(scene.matrixWorld).invert();
     const worldCenter = new THREE.Vector3();
     mesh.getWorldPosition(worldCenter);
     const localCenter = worldCenter.applyMatrix4(invMatrix);
+
+    console.log(
+      `[Screen ${config.id}] size: ${worldW.toFixed(3)} x ${worldH.toFixed(3)}, center: ${localCenter.x.toFixed(3)}, ${localCenter.y.toFixed(3)}, ${localCenter.z.toFixed(3)}`,
+    );
 
     const BASE_CSS_WIDTH = 393 * RENDER_SCALE;
     const autoHeight = Math.round(BASE_CSS_WIDTH * (worldH / worldW));
@@ -185,6 +190,13 @@ export function DeviceModel({
   const pos = overrides?.position ?? [0, 0, 0];
   const rot = overrides?.rotation ?? [0, 0, 0];
   const screenPos = overrides?.screenPosition ?? config.htmlPosition;
+  const htmlRot: [number, number, number] = overrides?.htmlRotation
+    ? [
+        overrides.htmlRotation[0] * DEG2RAD,
+        overrides.htmlRotation[1] * DEG2RAD,
+        overrides.htmlRotation[2] * DEG2RAD,
+      ]
+    : config.htmlRotation;
 
   return (
     <Float
@@ -205,7 +217,7 @@ export function DeviceModel({
                 screenCenter.y + screenPos[1],
                 screenCenter.z + screenPos[2],
               ]}
-              rotation={config.htmlRotation}
+              rotation={htmlRot}
               distanceFactor={autoScreenDims?.distanceFactor ?? config.distanceFactor}
               style={{
                 width: autoScreenDims?.htmlWidth ?? config.htmlSize.width,
