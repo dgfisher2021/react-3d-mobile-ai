@@ -2,6 +2,8 @@
 
 Ordered specs for the next phase of work. Each spec is a self-contained unit that can be handed to an agent. Do them in order — each builds on the previous.
 
+**Cross-cutting: Add ESLint.** The project has Prettier but no ESLint. Add `eslint` + `@typescript-eslint` + `eslint-plugin-react-hooks` as part of Spec 1 (React 19 upgrade). The hooks plugin catches dependency array issues that caused bugs in this session. Run `npx eslint --fix` alongside `npx prettier --write` after changes.
+
 ---
 
 ## 1. React 19 + R3F v9 + drei v10 Upgrade
