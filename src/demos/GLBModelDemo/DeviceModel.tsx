@@ -14,6 +14,7 @@ import type { DeviceConfig, ModelOverrides } from './deviceConfigs';
 const TARGET_H = PHONE.h; // 3.0
 
 const DEG2RAD = Math.PI / 180;
+const RENDER_SCALE = 2;
 
 export interface ModelInfo {
   boundingBox: { w: number; h: number; d: number };
@@ -126,7 +127,7 @@ export function DeviceModel({
     mesh.getWorldPosition(worldCenter);
     const localCenter = worldCenter.applyMatrix4(invMatrix);
 
-    const BASE_CSS_WIDTH = 393;
+    const BASE_CSS_WIDTH = 393 * RENDER_SCALE;
     const autoHeight = Math.round(BASE_CSS_WIDTH * (worldH / worldW));
     // drei source: CSS matrix element = worldMatrixElement * (DF / 400)
     // For cssWidth pixels to cover worldW world units:
@@ -224,7 +225,16 @@ export function DeviceModel({
                   transform: config.modelRotation[1] !== 0 ? 'scaleX(-1)' : undefined,
                 }}
               >
-                <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
+                <div
+                  style={{
+                    width: 393,
+                    height: autoScreenDims ? autoScreenDims.htmlHeight / RENDER_SCALE : 852,
+                    transform: `scale(${RENDER_SCALE})`,
+                    transformOrigin: 'top left',
+                  }}
+                >
+                  <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
+                </div>
               </div>
             </Html>
           )}
