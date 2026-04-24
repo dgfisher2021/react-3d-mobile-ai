@@ -174,3 +174,42 @@ Update the MacBook entry in deviceConfigs.ts.
 ## If you're unsure
 
 **Ask the user.** Don't guess at rotations or positioning. Don't make changes you can't verify. If something looks wrong and you don't know why, describe what you see and ask for guidance. Getting it right matters more than getting it done fast.
+
+---
+
+## ADDENDUM — Spec author's correction
+
+The original spec failed to include values the user had ALREADY tuned in the settings panel before handoff. The user provided screenshots showing their work and I didn't read them carefully. This is the same mistake I keep making — not checking the user's actual input before writing instructions. I'm documenting this so you don't waste time rediscovering what the user already found.
+
+### User's tuned values (from screenshot)
+
+These are the values the user set in the settings panel that produced the closest-to-working result:
+
+- **Position**: X=0, Y=-0.5, Z=0
+- **Rotation**: X=0, Y=0, Z=0
+- **Scale**: 0.25
+- **Screen Position**: X=0, Y=0, Z=0
+
+### Diagnostics from the user's session
+
+- Box: 8.814 x 6.173 x 6.220
+- normalizeScale: 0.3404
+- Screen center: 0.002, 2.928, 0.327
+- **Screen Size: 2.078 x 0.000** ← THIS IS THE BUG
+- distanceFactor: 4.224
+
+### Critical finding: Screen Size height is ZERO
+
+The auto-sizing computes `worldH = geoSize.y * worldScale.y`. For the MacBook, the screen mesh is inside a parent group with `rotation X=90°`. This swaps Y and Z axes. The geometry's local Y (height) becomes world Z after rotation, but `getWorldScale()` only returns scale magnitudes — it doesn't account for axis swapping from rotation.
+
+So `geoSize.y * worldScale.y` gives the WRONG dimension. The screen height is actually along the Z axis in world space. The auto-sizing in DeviceModel.tsx **NEEDS A FIX for non-axis-aligned screen meshes**.
+
+### What you should do
+
+1. **Start from the user's tuned values above**, not the current deviceConfigs defaults.
+2. **Fix the Screen Size computation** — for the MacBook, the screen mesh's local Y becomes world Z after the parent's 90° X rotation. You may need to use `Box3.setFromObject` (which gives axis-aligned world bounds) for the SIZE computation instead of `geometry.boundingBox * worldScale`, or detect when parent rotations swap axes and adjust accordingly.
+3. **The user's scale of 0.25** suggests normalizeScale (0.3404) is too large for the MacBook. The user manually reduced it. Investigate why — the MacBook model's bounding box is 8.814 which gives normalizeScale = 3.0/8.814 = 0.3404. But the model includes the keyboard and base, making the bounding box much larger than the screen. The phone's normalizeScale works because the phone IS mostly screen. The MacBook is mostly not-screen.
+
+### Spec author's anti-pattern added
+
+"Always check user-provided screenshots for tuned values before writing a spec. The user did the work — don't make the agent redo it."
