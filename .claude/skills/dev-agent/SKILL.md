@@ -101,6 +101,8 @@ Tell the user:
 | Verifying before claiming done | `superpowers:verification-before-completion`       |
 | Three.js/drei questions        | Context7 with `/pmndrs/drei` or `/mrdoob/three.js` |
 | UI/UX review                   | `ui-ux-usability-heuristics` or `ui-ux-pro-max`    |
+| Creating new skills            | `/meta-skill`                                      |
+| Creating new sub-agents        | `meta-agent`                                       |
 
 ## The user's goals
 
