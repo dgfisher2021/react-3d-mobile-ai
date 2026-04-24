@@ -81,16 +81,15 @@ export function DeviceModel({
         if (child.name === config.screenNode) {
           screenMesh = child as THREE.Mesh;
         }
-        if (child.name === 'Body001_Screen_Glass_0') {
-          const invMatrix = new THREE.Matrix4().copy(scene.matrixWorld).invert();
-          const glassWorldPos = new THREE.Vector3();
-          child.getWorldPosition(glassWorldPos);
-          const glassLocal = glassWorldPos.applyMatrix4(invMatrix);
-        }
       }
     });
     if (screenMesh) {
       screenMeshRef.current = screenMesh;
+      // Set wallpaper to black immediately to avoid blue texture flash on load
+      const mat = screenMesh.material as THREE.MeshStandardMaterial;
+      mat.color.set(0x000000);
+      mat.map = null;
+      mat.needsUpdate = true;
     } else {
       console.warn(`[GLB] Screen node "${config.screenNode}" not found`);
       onModelInfo?.({
