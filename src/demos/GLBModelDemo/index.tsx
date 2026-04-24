@@ -3,6 +3,12 @@ import { Canvas } from '@react-three/fiber';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { MeshBoundingBoxes } from '../../components/MeshBoundingBoxes';
+import {
+  buildInitialLayerState,
+  MeshLayerTree,
+  type MeshLayerMap,
+} from '../../components/MeshLayerTree';
 import { SettingsPanel } from '../../components/SettingsPanel';
 import { SidebarButton, ViewPresets } from '../../components/ViewPresets';
 import {
@@ -25,6 +31,8 @@ export default function GLBModelDemo() {
   const [deviceId, setDeviceId] = useState('iphone');
   const [overrides, setOverrides] = useState<Record<string, ModelOverrides>>({});
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
+  const [glbScene, setGlbScene] = useState<THREE.Object3D | null>(null);
+  const [meshLayers, setMeshLayers] = useState<MeshLayerMap>({});
   const controlsRef = useRef<any>(null);
 
   const config = DEVICES.find((d) => d.id === deviceId) ?? DEVICES[0];
@@ -44,6 +52,11 @@ export default function GLBModelDemo() {
       return next;
     });
   }, [config.id]);
+
+  const handleScene = useCallback((scene: THREE.Object3D) => {
+    setGlbScene(scene);
+    setMeshLayers(buildInitialLayerState(scene));
+  }, []);
 
   // Apply persisted activePreset when this demo mounts
   useEffect(() => {
@@ -118,10 +131,13 @@ export default function GLBModelDemo() {
             showScreen={showScreen}
             overrides={currentOverrides}
             onModelInfo={setModelInfo}
+            onScene={handleScene}
+            meshLayers={meshLayers}
           />
         </Suspense>
 
         <SceneHelpers />
+        {glbScene && <MeshBoundingBoxes scene={glbScene} layerState={meshLayers} />}
         <ContactShadows position={[0, -2, 0]} opacity={0.35} scale={8} blur={2.5} />
         <OrbitControls
           ref={controlsRef}
@@ -172,7 +188,11 @@ export default function GLBModelDemo() {
         overrides={currentOverrides}
         onOverridesChange={handleOverridesChange}
         onResetModel={resetCurrentDevice}
-      />
+      >
+        {glbScene && (
+          <MeshLayerTree scene={glbScene} layerState={meshLayers} onLayerChange={setMeshLayers} />
+        )}
+      </SettingsPanel>
     </div>
   );
 }

@@ -175,6 +175,7 @@ interface SettingsPanelProps {
   onResetModel?: () => void;
   staticInfo?: Record<string, string>;
   webgl?: boolean;
+  children?: React.ReactNode;
 }
 
 export function SettingsPanel({
@@ -184,6 +185,7 @@ export function SettingsPanel({
   onResetModel,
   staticInfo,
   webgl = true,
+  children,
 }: SettingsPanelProps) {
   const {
     showAxes,
@@ -418,6 +420,9 @@ export function SettingsPanel({
               ))}
             </>
           )}
+
+          {/* Extra content (e.g. Mesh Layer Tree) */}
+          {children}
 
           {/* Camera */}
           <div style={{ ...sectionHeader, marginTop: 16 }}>Camera</div>

@@ -2,6 +2,7 @@ import { Float, Html, useGLTF } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
+import type { MeshLayerMap } from '../../components/MeshLayerTree';
 import { FLOAT } from '../../constants/demoSettings';
 import { useSettingsContext } from '../../context/SettingsContext';
 import { PHONE } from '../ThreeJsCanvasDemo/phoneConstants';
@@ -29,6 +30,8 @@ interface DeviceModelProps {
   showScreen: boolean;
   overrides?: ModelOverrides;
   onModelInfo?: (info: ModelInfo) => void;
+  onScene?: (scene: THREE.Object3D) => void;
+  meshLayers?: MeshLayerMap;
 }
 
 export function DeviceModel({
@@ -38,6 +41,8 @@ export function DeviceModel({
   showScreen,
   overrides,
   onModelInfo,
+  onScene,
+  meshLayers,
 }: DeviceModelProps) {
   const { scene } = useGLTF(config.glbPath);
   const groupRef = useRef<THREE.Group>(null);
@@ -162,6 +167,24 @@ export function DeviceModel({
       mat.transparent = false;
     }
   }, [showScreen]);
+
+  // Expose scene to parent for MeshLayerTree
+  useEffect(() => {
+    onScene?.(scene);
+  }, [scene, onScene]);
+
+  // Apply per-mesh visibility from layer state
+  useEffect(() => {
+    if (!meshLayers) return;
+    scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const state = meshLayers[obj.uuid];
+        if (state !== undefined) {
+          obj.visible = state.visible;
+        }
+      }
+    });
+  }, [scene, meshLayers]);
 
   // Screen sizing: use auto-computed values from mesh geometry, fall back to config
 

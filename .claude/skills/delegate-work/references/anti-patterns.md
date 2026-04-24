@@ -2,6 +2,22 @@
 
 Real mistakes from real sessions. Each one cost tokens and user trust.
 
+## Deleting untracked files without checking recoverability
+
+**Wrong:** You run `rm specs/react-19-upgrade.md` to "clean up old specs." The file was untracked — never committed to git. It's gone permanently. An agent spent 127k tokens creating analysis that included that file.
+
+**Why it fails:** Untracked files have no git history. `git checkout` can't restore them. `git reflog` can't find them. The tokens spent creating that content are permanently wasted — burned money.
+
+**Fix:** Before deleting ANY file, check `git status` to see if it's tracked. If it's untracked, either commit it first (even to a throwaway branch) or ask the user before deleting. If you're cleaning up specs, keep the ones that aren't fully executed or that contain analysis for future work.
+
+## Doing inline implementation instead of spawning a sub-agent
+
+**Wrong:** You implement a code change directly in the conversation instead of spawning a sub-agent. The code diffs fill your context window. The fix doesn't even work. Now your context is bloated AND the problem isn't solved.
+
+**Why it fails:** Every line of code you read and write in the main conversation consumes context tokens that can't be recovered. Sub-agents use their own context. If the fix works, great — you get a summary. If it doesn't, you wasted sub-agent tokens but your own context is clean for the next attempt.
+
+**Fix:** If the change touches more than one file or requires reading file contents to implement, spawn a sub-agent. Keep your context for thinking, planning, and reviewing — not for writing code.
+
 ## Interpreting instead of quoting
 
 **Wrong:** User says "I want ALL the effects from the original." You write in the spec: "Initialize all to false (off by default)."
