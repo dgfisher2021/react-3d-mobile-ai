@@ -1,5 +1,6 @@
-import { useDemoContext } from '../context/DemoContext';
-import { CAMERA } from '../constants/demoSettings';
+import { useSettingsContext } from '../context/SettingsContext';
+import { CAMERA, SCREEN } from '../constants/demoSettings';
+import { PHONE } from '../demos/ThreeJsCanvasDemo/phoneConstants';
 import type { ModelInfo } from '../demos/GLBModelDemo/DeviceModel';
 import type { ModelOverrides } from '../demos/GLBModelDemo/deviceConfigs';
 
@@ -72,6 +73,19 @@ const numInputStyle: React.CSSProperties = {
   color: '#CBD5E0',
   textAlign: 'right',
   outline: 'none',
+};
+
+const resetBtnStyle: React.CSSProperties = {
+  fontSize: '0.6rem',
+  fontFamily: MONO,
+  padding: '4px 10px',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 6,
+  background: 'rgba(255,255,255,0.04)',
+  color: '#CBD5E0',
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  letterSpacing: '0.5px',
 };
 
 function Toggle({
@@ -158,6 +172,7 @@ interface SettingsPanelProps {
   modelInfo?: ModelInfo | null;
   overrides?: ModelOverrides;
   onOverridesChange?: (o: ModelOverrides) => void;
+  onResetModel?: () => void;
   staticInfo?: Record<string, string>;
   webgl?: boolean;
 }
@@ -166,6 +181,7 @@ export function SettingsPanel({
   modelInfo,
   overrides,
   onOverridesChange,
+  onResetModel,
   staticInfo,
   webgl = true,
 }: SettingsPanelProps) {
@@ -180,7 +196,24 @@ export function SettingsPanel({
     setShowScreen,
     settingsOpen,
     setSettingsOpen,
-  } = useDemoContext();
+    screenWidth,
+    setScreenWidth,
+    screenHeight,
+    setScreenHeight,
+    cornerRadius,
+    setCornerRadius,
+    distanceFactor,
+    setDistanceFactor,
+    resetDisplay,
+  } = useSettingsContext();
+
+  // Compute display-ready actual scale for GLB model
+  const actualScale =
+    overrides && modelInfo
+      ? overrides.scale > 0
+        ? overrides.scale
+        : modelInfo.normalizeScale
+      : null;
 
   return (
     <>
@@ -230,8 +263,44 @@ export function SettingsPanel({
             animation: 'fadeIn 0.3s ease',
           }}
         >
-          {/* Environment */}
-          <div style={sectionHeader}>Environment</div>
+          {/* Display Section */}
+          <div style={sectionHeader}>Display</div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Screen Display</span>
+            <Toggle
+              active={showScreen}
+              onToggle={() => setShowScreen(!showScreen)}
+              label="Screen Display"
+            />
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Screen Width</span>
+            <NumberInput value={screenWidth} step={1} onChange={setScreenWidth} />
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Screen Height</span>
+            <NumberInput value={screenHeight} step={1} onChange={setScreenHeight} />
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Corner Radius</span>
+            <NumberInput value={cornerRadius} step={1} onChange={setCornerRadius} />
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Distance Factor</span>
+            <NumberInput value={distanceFactor} step={0.01} onChange={setDistanceFactor} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+            <button
+              style={resetBtnStyle}
+              onClick={resetDisplay}
+              title={`Reset to ${SCREEN.width} x ${SCREEN.height}`}
+            >
+              Reset Display
+            </button>
+          </div>
+
+          {/* Scene Section */}
+          <div style={{ ...sectionHeader, marginTop: 16 }}>Scene</div>
           <div style={rowStyle}>
             <span style={{ ...labelStyle, opacity: webgl ? 1 : 0.4 }}>
               Axes Helper{!webgl && ' (WebGL)'}
@@ -258,19 +327,11 @@ export function SettingsPanel({
               label="Particles"
             />
           </div>
-          <div style={rowStyle}>
-            <span style={labelStyle}>Screen Display</span>
-            <Toggle
-              active={showScreen}
-              onToggle={() => setShowScreen(!showScreen)}
-              label="Screen Display"
-            />
-          </div>
 
-          {/* Model Modifiers */}
+          {/* Model Section (GLB demo only) */}
           {overrides && onOverridesChange && (
             <>
-              <div style={{ ...sectionHeader, marginTop: 16 }}>Model Modifiers</div>
+              <div style={{ ...sectionHeader, marginTop: 16 }}>Model</div>
               <Vec3Input
                 label="Position"
                 value={overrides.position}
@@ -286,49 +347,70 @@ export function SettingsPanel({
               <div style={{ marginBottom: 6 }}>
                 <div style={{ ...labelStyle, marginBottom: 4 }}>Scale</div>
                 <NumberInput
-                  value={overrides.scale}
+                  value={actualScale ?? 1}
                   step={0.01}
                   onChange={(v) => onOverridesChange({ ...overrides, scale: v })}
                 />
               </div>
               <Vec3Input
-                label="Screen Offset"
-                value={overrides.screenOffset}
+                label="Screen Position"
+                value={overrides.screenPosition}
                 step={0.001}
-                onChange={(v) => onOverridesChange({ ...overrides, screenOffset: v })}
+                onChange={(v) => onOverridesChange({ ...overrides, screenPosition: v })}
               />
+
+              {/* Read-only computed values */}
+              {modelInfo && (
+                <div style={{ marginTop: 8 }}>
+                  <div style={monoValue}>
+                    Box: {modelInfo.boundingBox.w.toFixed(3)} x {modelInfo.boundingBox.h.toFixed(3)}{' '}
+                    x {modelInfo.boundingBox.d.toFixed(3)}
+                  </div>
+                  <div style={monoValue}>normalizeScale: {modelInfo.normalizeScale.toFixed(4)}</div>
+                  <div style={monoValue}>
+                    Screen:{' '}
+                    {modelInfo.screenCenter
+                      ? `${modelInfo.screenCenter[0].toFixed(3)}, ${modelInfo.screenCenter[1].toFixed(3)}, ${modelInfo.screenCenter[2].toFixed(3)}`
+                      : 'not found'}
+                  </div>
+                  <div style={monoValue}>
+                    Screen Size:{' '}
+                    {modelInfo.screenSize
+                      ? `${modelInfo.screenSize.w.toFixed(3)} x ${modelInfo.screenSize.h.toFixed(3)}`
+                      : 'n/a'}
+                  </div>
+                  <div style={monoValue}>distanceFactor: {modelInfo.distanceFactor.toFixed(3)}</div>
+                </div>
+              )}
+
+              {onResetModel && (
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    marginTop: 6,
+                  }}
+                >
+                  <button style={resetBtnStyle} onClick={onResetModel}>
+                    Reset Model
+                  </button>
+                </div>
+              )}
             </>
           )}
 
-          {/* Model Info */}
-          {modelInfo && (
-            <>
-              <div style={{ ...sectionHeader, marginTop: 16 }}>Model Info</div>
-              <div style={monoValue}>
-                Box: {modelInfo.boundingBox.w.toFixed(3)} x {modelInfo.boundingBox.h.toFixed(3)} x{' '}
-                {modelInfo.boundingBox.d.toFixed(3)}
-              </div>
-              <div style={monoValue}>Scale: {modelInfo.normalizeScale.toFixed(4)}</div>
-              <div style={monoValue}>
-                Screen:{' '}
-                {modelInfo.screenCenter
-                  ? `${modelInfo.screenCenter[0].toFixed(3)}, ${modelInfo.screenCenter[1].toFixed(3)}, ${modelInfo.screenCenter[2].toFixed(3)}`
-                  : 'not found'}
-              </div>
-              <div style={monoValue}>
-                Screen Size:{' '}
-                {modelInfo.screenSize
-                  ? `${modelInfo.screenSize.w.toFixed(3)} x ${modelInfo.screenSize.h.toFixed(3)}`
-                  : 'n/a'}
-              </div>
-              <div style={monoValue}>distanceFactor: {modelInfo.distanceFactor.toFixed(3)}</div>
-            </>
-          )}
-
-          {/* Static Phone Info (non-GLB demos) */}
-          {staticInfo && !modelInfo && (
+          {/* Phone Info (non-GLB demos) */}
+          {staticInfo && !overrides && (
             <>
               <div style={{ ...sectionHeader, marginTop: 16 }}>Phone Info</div>
+              <div style={monoValue}>
+                Dimensions: {PHONE.w} x {PHONE.h} x {PHONE.d}
+              </div>
+              <div style={monoValue}>
+                Screen: {screenWidth} x {screenHeight} px
+              </div>
+              <div style={monoValue}>Corner Radius: {cornerRadius}</div>
+              <div style={monoValue}>Scale: 1.0 (procedural)</div>
               {Object.entries(staticInfo).map(([key, val]) => (
                 <div key={key} style={monoValue}>
                   {key}: {val}
@@ -339,8 +421,8 @@ export function SettingsPanel({
 
           {/* Camera */}
           <div style={{ ...sectionHeader, marginTop: 16 }}>Camera</div>
-          <div style={monoValue}>Pos: 0, 0, {CAMERA.z}</div>
           <div style={monoValue}>FOV: {CAMERA.fov}</div>
+          <div style={monoValue}>Distance: {CAMERA.z}</div>
         </div>
       )}
     </>

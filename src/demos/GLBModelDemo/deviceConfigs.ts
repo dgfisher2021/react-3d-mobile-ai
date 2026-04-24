@@ -1,16 +1,16 @@
 export interface ModelOverrides {
-  position: [number, number, number];
-  rotation: [number, number, number]; // degrees for UI, converted to radians for Three.js
-  scale: number; // multiplier on top of normalizeScale
-  screenOffset: [number, number, number];
+  position: [number, number, number]; // actual world position
+  rotation: [number, number, number]; // actual rotation in degrees
+  scale: number; // actual applied scale (normalizeScale * multiplier)
+  screenPosition: [number, number, number]; // actual screen world position
 }
 
 export function getDefaultOverrides(config: DeviceConfig): ModelOverrides {
   return {
     position: [0, 0, 0],
     rotation: [0, 0, 0],
-    scale: 1,
-    screenOffset: config.htmlPosition,
+    scale: 0, // 0 means "use normalizeScale * 1" (computed after mount)
+    screenPosition: config.htmlPosition,
   };
 }
 

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SCREEN } from '../../constants/demoSettings';
 import { roundedRect } from '../../utils/roundedRect';
 import { PHONE } from './phoneConstants';
 
@@ -67,14 +68,12 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
 
   // Screen plane with dashboard texture. Uses a rounded ShapeGeometry
   // instead of a flat PlaneGeometry so the mesh's corners match the
-  // rounded clip painted into the canvas — without this the plane's
-  // rectangular corners would render as black squares sticking out
-  // past the rounded dashboard art. Corner radius (42 logical pt, =
-  // 42/393 of the screen width in world units) is kept in sync with
-  // the canvas `cornerR` in drawScreen.ts and the CSS3D/R3F demos.
+  // rounded clip painted into the canvas. Corner radius is derived from
+  // the shared SCREEN constants (cornerRadius / width) to stay in sync
+  // with drawScreen.ts and the CSS3D/R3F demos.
   const screenW = w - bezel * 2;
   const screenH = h - bezel * 2;
-  const SCREEN_CORNER = (42 / 393) * screenW;
+  const SCREEN_CORNER = (SCREEN.cornerRadius / SCREEN.width) * screenW;
   const screenGeo = new THREE.ShapeGeometry(roundedRect(screenW, screenH, SCREEN_CORNER), 24);
   // ShapeGeometry emits raw XY as UVs; remap them to [0,1] over the
   // shape's bounding box so the canvas texture maps 1:1 across the

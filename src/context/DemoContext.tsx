@@ -6,16 +6,8 @@ interface DemoContextType {
   toggleTheme: () => void;
   autoRotate: boolean;
   setAutoRotate: (v: boolean) => void;
-  showAxes: boolean;
-  setShowAxes: (v: boolean) => void;
-  showGrid: boolean;
-  setShowGrid: (v: boolean) => void;
-  showParticles: boolean;
-  setShowParticles: (v: boolean) => void;
-  showScreen: boolean;
-  setShowScreen: (v: boolean) => void;
-  settingsOpen: boolean;
-  setSettingsOpen: (v: boolean) => void;
+  activePreset: number | null;
+  setActivePreset: (v: number | null) => void;
 }
 
 const DemoContext = createContext<DemoContextType | null>(null);
@@ -31,11 +23,7 @@ export function useDemoContext(): DemoContextType {
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [themeName, setThemeName] = useState<ThemeName>('dark');
   const [autoRotate, setAutoRotate] = useState(true);
-  const [showAxes, setShowAxes] = useState(false);
-  const [showGrid, setShowGrid] = useState(true);
-  const [showParticles, setShowParticles] = useState(true);
-  const [showScreen, setShowScreen] = useState(true);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activePreset, setActivePreset] = useState<number | null>(null);
 
   const toggleTheme = useCallback(() => setThemeName((t) => (t === 'dark' ? 'light' : 'dark')), []);
 
@@ -45,27 +33,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       toggleTheme,
       autoRotate,
       setAutoRotate,
-      showAxes,
-      setShowAxes,
-      showGrid,
-      setShowGrid,
-      showParticles,
-      setShowParticles,
-      showScreen,
-      setShowScreen,
-      settingsOpen,
-      setSettingsOpen,
+      activePreset,
+      setActivePreset,
     }),
-    [
-      themeName,
-      toggleTheme,
-      autoRotate,
-      showAxes,
-      showGrid,
-      showParticles,
-      showScreen,
-      settingsOpen,
-    ],
+    [themeName, toggleTheme, autoRotate, activePreset],
   );
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;

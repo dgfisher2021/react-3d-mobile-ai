@@ -9,13 +9,14 @@ import {
   AUTO_ROTATE,
   BG_GRADIENT,
   CAMERA,
+  SCREEN,
   VIEW_PRESETS,
 } from '../../constants/demoSettings';
 import { useDemoContext } from '../../context/DemoContext';
+import { useSettingsContext } from '../../context/SettingsContext';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { buildPhone } from './buildPhone';
 import { drawScreen } from './drawScreen';
-import { PHONE } from './phoneConstants';
 
 interface OrbitState {
   isDragging: boolean;
@@ -34,8 +35,8 @@ interface OrbitState {
  * has inertia, auto-rotate, and preset view buttons.
  */
 export default function ThreeJsCanvasDemo() {
-  const { autoRotate, setAutoRotate, showAxes, showGrid, showParticles, showScreen } =
-    useDemoContext();
+  const { autoRotate, setAutoRotate, activePreset, setActivePreset } = useDemoContext();
+  const { showAxes, showGrid, showParticles, showScreen } = useSettingsContext();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const reducedMotion = useReducedMotion();
   const reducedMotionRef = useRef(reducedMotion);
@@ -57,6 +58,17 @@ export default function ThreeJsCanvasDemo() {
   useEffect(() => {
     stateRef.current.autoRotate = autoRotate;
   }, [autoRotate]);
+
+  // Apply persisted activePreset on mount / when it changes
+  useEffect(() => {
+    if (activePreset === null) return;
+    const p = VIEW_PRESETS[activePreset];
+    if (!p) return;
+    const st = stateRef.current;
+    st.targetRot = { x: p.rad.x, y: p.rad.y };
+    st.velocity = { x: 0, y: 0 };
+    st.autoRotate = false;
+  }, [activePreset]);
 
   // Sync environment toggles → imperative ref
   useEffect(() => {
@@ -85,7 +97,7 @@ export default function ThreeJsCanvasDemo() {
 
     const screenCanvas = document.createElement('canvas');
     screenCanvas.width = 512;
-    screenCanvas.height = 1024;
+    screenCanvas.height = Math.round((512 * SCREEN.height) / SCREEN.width);
     drawScreen(screenCanvas);
     const screenTexture = new THREE.CanvasTexture(screenCanvas);
     // The 2D canvas was painted in sRGB — tag it so the renderer decodes it
@@ -137,8 +149,9 @@ export default function ThreeJsCanvasDemo() {
     accentRight.position.set(3, -1, 1);
     scene.add(accentRight);
 
-    // Axes helper
+    // Axes helper — at grid floor level
     const axesHelper = new THREE.AxesHelper(2);
+    axesHelper.position.y = -2;
     axesHelper.visible = helpersRef.current.showAxes;
     scene.add(axesHelper);
 
@@ -235,6 +248,7 @@ export default function ThreeJsCanvasDemo() {
       st.isDragging = true;
       st.autoRotate = false;
       setAutoRotate(false);
+      setActivePreset(null);
       st.prev = getPos(e);
       st.velocity = { x: 0, y: 0 };
       setHint(false);
@@ -314,8 +328,9 @@ export default function ThreeJsCanvasDemo() {
       st.velocity = { x: 0, y: 0 };
       st.autoRotate = false;
       setAutoRotate(false);
+      setActivePreset(index);
     },
-    [setAutoRotate],
+    [setAutoRotate, setActivePreset],
   );
 
   const resetView = useCallback(() => {
@@ -325,7 +340,8 @@ export default function ThreeJsCanvasDemo() {
     st.targetZoom = CAMERA.z;
     st.autoRotate = true;
     setAutoRotate(true);
-  }, [setAutoRotate]);
+    setActivePreset(null);
+  }, [setAutoRotate, setActivePreset]);
 
   return (
     <div
@@ -352,12 +368,15 @@ export default function ThreeJsCanvasDemo() {
         ]}
       />
 
-      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
+      <ViewPresets
+        autoRotate={autoRotate}
+        activePreset={activePreset}
+        onPreset={applyPreset}
+        onAuto={resetView}
+      />
       <SettingsPanel
         staticInfo={{
-          dimensions: `${PHONE.w} x ${PHONE.h} x ${PHONE.d}`,
-          screen: '512 x 1024 canvas texture',
-          scale: '1.0 (procedural)',
+          texture: '512 x 1024 canvas',
         }}
       />
     </div>

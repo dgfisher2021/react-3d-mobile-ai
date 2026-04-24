@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
 import { FLOAT } from '../../constants/demoSettings';
+import { useSettingsContext } from '../../context/SettingsContext';
 import { PHONE } from '../ThreeJsCanvasDemo/phoneConstants';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { ThemeName } from '../../types';
@@ -42,6 +43,7 @@ export function DeviceModel({
   const groupRef = useRef<THREE.Group>(null);
   const screenMeshRef = useRef<THREE.Mesh | null>(null);
   const reducedMotion = useReducedMotion();
+  const { cornerRadius: ctxCornerRadius } = useSettingsContext();
   const [screenCenter, setScreenCenter] = useState<THREE.Vector3 | null>(null);
   const [screenWorldSize, setScreenWorldSize] = useState<THREE.Vector3 | null>(null);
 
@@ -127,10 +129,12 @@ export function DeviceModel({
     ? Math.max(screenWorldSize.x, screenWorldSize.y) * (config.portrait ? 1.15 : 1.6)
     : config.distanceFactor;
 
-  const appliedScale = normalizeScale * (overrides?.scale ?? 1);
+  // Convert from actual values to Three.js inputs
+  // scale: if overrides.scale is 0 (default/unset), use normalizeScale * 1
+  const actualScale = overrides?.scale && overrides.scale > 0 ? overrides.scale : normalizeScale;
   const pos = overrides?.position ?? [0, 0, 0];
   const rot = overrides?.rotation ?? [0, 0, 0];
-  const screenOff = overrides?.screenOffset ?? config.htmlPosition;
+  const screenPos = overrides?.screenPosition ?? config.htmlPosition;
 
   return (
     <Float
@@ -139,7 +143,7 @@ export function DeviceModel({
       floatIntensity={reducedMotion ? 0 : FLOAT.floatIntensity}
     >
       <group position={pos} rotation={[rot[0] * DEG2RAD, rot[1] * DEG2RAD, rot[2] * DEG2RAD]}>
-        <group ref={groupRef} scale={appliedScale}>
+        <group ref={groupRef} scale={actualScale}>
           <primitive object={scene} />
         </group>
 
@@ -147,16 +151,16 @@ export function DeviceModel({
           <Html
             transform
             position={[
-              screenCenter.x + screenOff[0],
-              screenCenter.y + screenOff[1],
-              screenCenter.z + screenOff[2],
+              screenCenter.x + screenPos[0],
+              screenCenter.y + screenPos[1],
+              screenCenter.z + screenPos[2],
             ]}
             rotation={config.htmlRotation}
             distanceFactor={computedDistanceFactor}
             style={{
               width: config.htmlSize.width,
               height: config.htmlSize.height,
-              borderRadius: config.portrait ? 42 : 8,
+              borderRadius: config.portrait ? ctxCornerRadius : 8,
               overflow: 'hidden',
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',

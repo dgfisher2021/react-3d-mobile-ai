@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useDemoContext } from '../context/DemoContext';
+import { useSettingsContext } from '../context/SettingsContext';
 
 const PARTICLE_COUNT = 60;
 
@@ -45,11 +45,11 @@ function Particles() {
 }
 
 export function SceneHelpers() {
-  const { showAxes, showGrid, showParticles } = useDemoContext();
+  const { showAxes, showGrid, showParticles } = useSettingsContext();
 
   return (
     <>
-      {showAxes && <axesHelper args={[2]} />}
+      {showAxes && <axesHelper args={[2]} position={[0, -2, 0]} />}
       {showGrid && (
         <gridHelper
           args={[12, 24, '#1a2744', '#0f1a2e']}

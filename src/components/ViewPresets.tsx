@@ -29,13 +29,20 @@ const BTN_ACTIVE: React.CSSProperties = {
 
 interface ViewPresetsProps {
   autoRotate: boolean;
+  activePreset: number | null;
   onPreset: (index: number) => void;
   onAuto: () => void;
   /** Extra buttons rendered after the divider (device picker, screen toggle, etc.) */
   children?: React.ReactNode;
 }
 
-export function ViewPresets({ autoRotate, onPreset, onAuto, children }: ViewPresetsProps) {
+export function ViewPresets({
+  autoRotate,
+  activePreset,
+  onPreset,
+  onAuto,
+  children,
+}: ViewPresetsProps) {
   return (
     <div
       style={{
@@ -51,7 +58,11 @@ export function ViewPresets({ autoRotate, onPreset, onAuto, children }: ViewPres
       }}
     >
       {VIEW_PRESETS.map((p, i) => (
-        <button key={p.label} onClick={() => onPreset(i)} style={BTN_INACTIVE}>
+        <button
+          key={p.label}
+          onClick={() => onPreset(i)}
+          style={activePreset === i && !autoRotate ? BTN_ACTIVE : BTN_INACTIVE}
+        >
           {p.label}
         </button>
       ))}

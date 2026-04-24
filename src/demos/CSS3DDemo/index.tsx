@@ -12,22 +12,19 @@ import {
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
 import { THEMES } from '../../constants/themes';
 import { useDemoContext } from '../../context/DemoContext';
+import { useSettingsContext } from '../../context/SettingsContext';
 
 interface Rotation {
   x: number;
   y: number;
 }
 
-const PHONE_W = 393;
-const PHONE_H = 852;
-
-// Match WebGL: phone occupies 3.0 / (2 * z * tan(fov/2)) of viewport height
-const PHONE_VIEWPORT_RATIO = 3.0 / (2 * CAMERA.z * Math.tan(((CAMERA.fov / 2) * Math.PI) / 180));
 const FOV_RAD_HALF = ((CAMERA.fov / 2) * Math.PI) / 180;
 
 export default function CSS3DDemo() {
-  const { themeName, toggleTheme, autoRotate, setAutoRotate, showGrid, showScreen } =
+  const { themeName, toggleTheme, autoRotate, setAutoRotate, activePreset, setActivePreset } =
     useDemoContext();
+  const { showGrid, showScreen, screenWidth, screenHeight, cornerRadius } = useSettingsContext();
   const [rotation, setRotation] = useState<Rotation>({
     x: AUTO_RESET.cssDeg.x,
     y: AUTO_RESET.cssDeg.y,
@@ -38,6 +35,14 @@ export default function CSS3DDemo() {
   const dragStart = useRef<Rotation & { px: number; py: number }>({ x: 0, y: 0, px: 0, py: 0 });
   const rotationRef = useRef(rotation);
   rotationRef.current = rotation;
+
+  // Apply persisted activePreset on mount
+  useEffect(() => {
+    if (activePreset === null) return;
+    const p = VIEW_PRESETS[activePreset];
+    if (!p) return;
+    setRotation({ x: p.cssDeg.x, y: p.cssDeg.y });
+  }, [activePreset]);
 
   // Track viewport height for responsive scaling
   useEffect(() => {
@@ -63,6 +68,7 @@ export default function CSS3DDemo() {
       if ((e.target as HTMLElement).closest('[data-phone-screen]')) return;
       setIsDragging(true);
       setAutoRotate(false);
+      setActivePreset(null);
       dragStart.current = {
         x: rotationRef.current.x,
         y: rotationRef.current.y,
@@ -71,7 +77,7 @@ export default function CSS3DDemo() {
       };
       setHint(false);
     },
-    [setAutoRotate],
+    [setAutoRotate, setActivePreset],
   );
 
   useEffect(() => {
@@ -94,22 +100,25 @@ export default function CSS3DDemo() {
   }, [isDragging]);
 
   const theme = THEMES[themeName];
-  const phoneScale = (PHONE_VIEWPORT_RATIO * viewportH) / PHONE_H;
+  const phoneViewportRatio = 3.0 / (2 * CAMERA.z * Math.tan(FOV_RAD_HALF));
+  const phoneScale = (phoneViewportRatio * viewportH) / screenHeight;
   const perspective = viewportH / (2 * Math.tan(FOV_RAD_HALF));
 
   const applyPreset = useCallback(
     (index: number) => {
       setAutoRotate(false);
+      setActivePreset(index);
       const p = VIEW_PRESETS[index];
       setRotation({ x: p.cssDeg.x, y: p.cssDeg.y });
     },
-    [setAutoRotate],
+    [setAutoRotate, setActivePreset],
   );
 
   const resetView = useCallback(() => {
     setAutoRotate(true);
+    setActivePreset(null);
     setRotation({ x: AUTO_RESET.cssDeg.x, y: AUTO_RESET.cssDeg.y });
-  }, [setAutoRotate]);
+  }, [setAutoRotate, setActivePreset]);
 
   return (
     <div
@@ -168,14 +177,17 @@ export default function CSS3DDemo() {
         ]}
       />
 
-      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
+      <ViewPresets
+        autoRotate={autoRotate}
+        activePreset={activePreset}
+        onPreset={applyPreset}
+        onAuto={resetView}
+      />
       <SettingsPanel
         webgl={false}
         staticInfo={{
-          dimensions: `${PHONE_W} x ${PHONE_H} CSS px`,
           phoneScale: phoneScale.toFixed(4),
           perspective: perspective.toFixed(0),
-          scale: 'viewport-relative',
         }}
       />
 
@@ -183,8 +195,8 @@ export default function CSS3DDemo() {
       <div style={{ perspective, perspectiveOrigin: '50% 50%' }}>
         <div
           style={{
-            width: PHONE_W,
-            height: PHONE_H,
+            width: screenWidth,
+            height: screenHeight,
             transformStyle: 'preserve-3d',
             transform: `scale(${phoneScale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
             transition:
@@ -238,9 +250,9 @@ export default function CSS3DDemo() {
           <div
             data-phone-screen="true"
             style={{
-              width: PHONE_W,
-              height: PHONE_H,
-              borderRadius: 42,
+              width: screenWidth,
+              height: screenHeight,
+              borderRadius: cornerRadius,
               overflow: 'hidden',
               position: 'relative',
               background: theme.screenBg,
@@ -258,7 +270,7 @@ export default function CSS3DDemo() {
               left: 0,
               right: 0,
               bottom: 0,
-              borderRadius: 42,
+              borderRadius: cornerRadius,
               background:
                 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.02) 100%)',
               pointerEvents: 'none',

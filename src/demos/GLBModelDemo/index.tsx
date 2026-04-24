@@ -1,6 +1,6 @@
 import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useCallback, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { DemoOverlay } from '../../components/DemoOverlay';
 import { SettingsPanel } from '../../components/SettingsPanel';
@@ -14,11 +14,14 @@ import {
 } from '../../constants/demoSettings';
 import { SceneHelpers } from '../../components/SceneHelpers';
 import { useDemoContext } from '../../context/DemoContext';
+import { useSettingsContext } from '../../context/SettingsContext';
 import { DeviceModel, type ModelInfo } from './DeviceModel';
 import { DEVICES, getDefaultOverrides, type ModelOverrides } from './deviceConfigs';
 
 export default function GLBModelDemo() {
-  const { themeName, toggleTheme, autoRotate, setAutoRotate, showScreen } = useDemoContext();
+  const { themeName, toggleTheme, autoRotate, setAutoRotate, activePreset, setActivePreset } =
+    useDemoContext();
+  const { showScreen } = useSettingsContext();
   const [deviceId, setDeviceId] = useState('iphone');
   const [overrides, setOverrides] = useState<Record<string, ModelOverrides>>({});
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
@@ -34,25 +37,45 @@ export default function GLBModelDemo() {
     [config.id],
   );
 
+  const resetCurrentDevice = useCallback(() => {
+    setOverrides((prev) => {
+      const next = { ...prev };
+      delete next[config.id];
+      return next;
+    });
+  }, [config.id]);
+
+  // Apply persisted activePreset when this demo mounts
+  useEffect(() => {
+    const c = controlsRef.current;
+    if (!c || activePreset === null) return;
+    const p = VIEW_PRESETS[activePreset];
+    if (!p) return;
+    c.setAzimuthalAngle(p.orbit.azimuth);
+    c.setPolarAngle(p.orbit.polar);
+  }, [activePreset]);
+
   const applyPreset = useCallback(
     (index: number) => {
       const c = controlsRef.current;
       if (!c) return;
       setAutoRotate(false);
+      setActivePreset(index);
       const p = VIEW_PRESETS[index];
       c.setAzimuthalAngle(p.orbit.azimuth);
       c.setPolarAngle(p.orbit.polar);
     },
-    [setAutoRotate],
+    [setAutoRotate, setActivePreset],
   );
 
   const resetView = useCallback(() => {
     const c = controlsRef.current;
     if (!c) return;
     setAutoRotate(true);
+    setActivePreset(null);
     c.setAzimuthalAngle(AUTO_RESET.orbit.azimuth);
     c.setPolarAngle(AUTO_RESET.orbit.polar);
-  }, [setAutoRotate]);
+  }, [setAutoRotate, setActivePreset]);
 
   // Preload all models
   for (const d of DEVICES) {
@@ -111,7 +134,10 @@ export default function GLBModelDemo() {
           maxPolarAngle={CAMERA.maxPolarAngle}
           dampingFactor={CAMERA.dampingFactor}
           enableDamping
-          onStart={() => setAutoRotate(false)}
+          onStart={() => {
+            setAutoRotate(false);
+            setActivePreset(null);
+          }}
         />
       </Canvas>
 
@@ -125,7 +151,12 @@ export default function GLBModelDemo() {
         ]}
       />
 
-      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView}>
+      <ViewPresets
+        autoRotate={autoRotate}
+        activePreset={activePreset}
+        onPreset={applyPreset}
+        onAuto={resetView}
+      >
         {DEVICES.map((d) => (
           <SidebarButton
             key={d.id}
@@ -140,6 +171,7 @@ export default function GLBModelDemo() {
         modelInfo={modelInfo}
         overrides={currentOverrides}
         onOverridesChange={handleOverridesChange}
+        onResetModel={resetCurrentDevice}
       />
     </div>
   );

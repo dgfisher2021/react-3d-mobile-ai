@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { DemoTabs, type DemoTab } from './components/DemoTabs';
 import { BG_GRADIENT } from './constants/demoSettings';
 import { DemoProvider } from './context/DemoContext';
+import { SettingsProvider } from './context/SettingsContext';
 
 const ThreeJsCanvasDemo = lazy(() => import('./demos/ThreeJsCanvasDemo'));
 const CSS3DDemo = lazy(() => import('./demos/CSS3DDemo'));
@@ -36,15 +37,17 @@ export default function App() {
 
   return (
     <DemoProvider>
-      <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-        <Suspense fallback={<LoadingView />}>
-          {active === 'threejs' && <ThreeJsCanvasDemo />}
-          {active === 'css3d' && <CSS3DDemo />}
-          {active === 'r3f' && <R3FDemo />}
-          {active === 'glb' && <GLBModelDemo />}
-        </Suspense>
-        <DemoTabs tabs={TABS} activeId={active} onChange={setActive} />
-      </div>
+      <SettingsProvider>
+        <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+          <Suspense fallback={<LoadingView />}>
+            {active === 'threejs' && <ThreeJsCanvasDemo />}
+            {active === 'css3d' && <CSS3DDemo />}
+            {active === 'r3f' && <R3FDemo />}
+            {active === 'glb' && <GLBModelDemo />}
+          </Suspense>
+          <DemoTabs tabs={TABS} activeId={active} onChange={setActive} />
+        </div>
+      </SettingsProvider>
     </DemoProvider>
   );
 }

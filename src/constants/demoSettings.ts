@@ -72,5 +72,13 @@ export const AUTO_RESET = {
   cssDeg: { x: -8, y: 22 },
 } as const;
 
+/** Screen display constants shared across all demos */
+export const SCREEN = {
+  width: 393,
+  height: 852,
+  cornerRadius: 42,
+  distanceFactor: 1.35,
+} as const;
+
 /** Background gradient used by all demos */
 export const BG_GRADIENT = 'linear-gradient(160deg, #080c18, #0d1b2e, #0a1628)';

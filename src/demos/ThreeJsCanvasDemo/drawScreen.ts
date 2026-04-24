@@ -1,3 +1,5 @@
+import { SCREEN } from '../../constants/demoSettings';
+
 /**
  * Paints the dashboard onto a 512x1024 canvas, which is then
  * used as a THREE.CanvasTexture on the phone's screen plane. This is a
@@ -8,7 +10,7 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
   if (!ctx) return;
   const W = canvas.width; // 512
   const H = canvas.height; // 1024
-  const s = W / 393; // scale from iPhone logical px
+  const s = W / SCREEN.width; // scale from iPhone logical px
 
   const rr = (x: number, y: number, w: number, h: number, r: number) => {
     ctx.beginPath();
@@ -204,10 +206,8 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
   };
 
   ctx.clearRect(0, 0, W, H);
-  // Screen corner radius in logical points. Kept at 42 to match the
-  // CSS3D and R3F demos — see buildPhone.ts which mirrors this value so
-  // the screen mesh geometry matches the painted clip.
-  const cornerR = 42 * s;
+  // Screen corner radius in logical points, shared via SCREEN constant.
+  const cornerR = SCREEN.cornerRadius * s;
   rr(0, 0, W, H, cornerR);
   ctx.save();
   ctx.clip();

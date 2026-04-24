@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
 import { FLOAT } from '../../constants/demoSettings';
+import { useSettingsContext } from '../../context/SettingsContext';
 import { PHONE } from '../../demos/ThreeJsCanvasDemo/phoneConstants';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { ThemeName } from '../../types';
@@ -33,6 +34,7 @@ export function PhoneMesh({ themeName, onToggleTheme, showScreen }: PhoneMeshPro
   const bodyRef = useRef<THREE.Mesh>(null);
   const backRef = useRef<THREE.Mesh>(null);
   const reducedMotion = useReducedMotion();
+  const { screenWidth, screenHeight, cornerRadius, distanceFactor } = useSettingsContext();
 
   const bodyGeo = useMemo(() => {
     const geo = new THREE.ExtrudeGeometry(roundedRect(PHONE_W, PHONE_H, CORNER), {
@@ -220,13 +222,13 @@ export function PhoneMesh({ themeName, onToggleTheme, showScreen }: PhoneMeshPro
             transform
             occlude={[bodyRef, backRef]}
             position={[0, 0, FRONT_Z + 0.02]}
-            distanceFactor={1.35}
+            distanceFactor={distanceFactor}
             style={{
-              width: 393,
-              height: 852,
-              borderRadius: 42,
+              width: screenWidth,
+              height: screenHeight,
+              borderRadius: cornerRadius,
               overflow: 'hidden',
-              clipPath: 'inset(0 round 42px)',
+              clipPath: `inset(0 round ${cornerRadius}px)`,
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
             }}

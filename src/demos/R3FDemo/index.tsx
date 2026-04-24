@@ -1,6 +1,6 @@
 import { ContactShadows, Environment, OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { DemoOverlay } from '../../components/DemoOverlay';
 import { SettingsPanel } from '../../components/SettingsPanel';
@@ -13,34 +13,48 @@ import {
   FLOAT,
   VIEW_PRESETS,
 } from '../../constants/demoSettings';
-import { PHONE } from '../ThreeJsCanvasDemo/phoneConstants';
 import { SceneHelpers } from '../../components/SceneHelpers';
 import { useDemoContext } from '../../context/DemoContext';
+import { useSettingsContext } from '../../context/SettingsContext';
 import { PhoneMesh } from './PhoneMesh';
 
 export default function R3FDemo() {
-  const { themeName, toggleTheme, autoRotate, setAutoRotate, showScreen } = useDemoContext();
+  const { themeName, toggleTheme, autoRotate, setAutoRotate, activePreset, setActivePreset } =
+    useDemoContext();
+  const { showScreen } = useSettingsContext();
   const controlsRef = useRef<any>(null);
+
+  // Apply persisted activePreset when this demo mounts
+  useEffect(() => {
+    const c = controlsRef.current;
+    if (!c || activePreset === null) return;
+    const p = VIEW_PRESETS[activePreset];
+    if (!p) return;
+    c.setAzimuthalAngle(p.orbit.azimuth);
+    c.setPolarAngle(p.orbit.polar);
+  }, [activePreset]);
 
   const applyPreset = useCallback(
     (index: number) => {
       const c = controlsRef.current;
       if (!c) return;
       setAutoRotate(false);
+      setActivePreset(index);
       const p = VIEW_PRESETS[index];
       c.setAzimuthalAngle(p.orbit.azimuth);
       c.setPolarAngle(p.orbit.polar);
     },
-    [setAutoRotate],
+    [setAutoRotate, setActivePreset],
   );
 
   const resetView = useCallback(() => {
     const c = controlsRef.current;
     if (!c) return;
     setAutoRotate(true);
+    setActivePreset(null);
     c.setAzimuthalAngle(AUTO_RESET.orbit.azimuth);
     c.setPolarAngle(AUTO_RESET.orbit.polar);
-  }, [setAutoRotate]);
+  }, [setAutoRotate, setActivePreset]);
 
   return (
     <div
@@ -79,7 +93,10 @@ export default function R3FDemo() {
           maxPolarAngle={CAMERA.maxPolarAngle}
           dampingFactor={CAMERA.dampingFactor}
           enableDamping
-          onStart={() => setAutoRotate(false)}
+          onStart={() => {
+            setAutoRotate(false);
+            setActivePreset(null);
+          }}
         />
       </Canvas>
 
@@ -93,12 +110,14 @@ export default function R3FDemo() {
         ]}
       />
 
-      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
+      <ViewPresets
+        autoRotate={autoRotate}
+        activePreset={activePreset}
+        onPreset={applyPreset}
+        onAuto={resetView}
+      />
       <SettingsPanel
         staticInfo={{
-          dimensions: `${PHONE.w} x ${PHONE.h} x ${PHONE.d}`,
-          screen: '393 x 852 px',
-          scale: '1.0 (procedural)',
           float: `speed ${FLOAT.speed}, rot ${FLOAT.rotationIntensity}`,
         }}
       />
