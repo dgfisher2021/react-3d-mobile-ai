@@ -159,7 +159,7 @@ export function SettingsPanel({ modelInfo, overrides, onOverridesChange }: Setti
         style={{
           position: 'absolute',
           bottom: 28,
-          left: 32,
+          right: 24,
           zIndex: 20,
           width: 40,
           height: 40,
@@ -186,7 +186,7 @@ export function SettingsPanel({ modelInfo, overrides, onOverridesChange }: Setti
           style={{
             position: 'absolute',
             bottom: 72,
-            left: 32,
+            right: 24,
             width: 300,
             maxHeight: '70vh',
             overflowY: 'auto',

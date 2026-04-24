@@ -106,7 +106,7 @@ export function DemoOverlay({ subtitle, hint, badges, showHint = true }: DemoOve
       <div
         style={{
           position: 'absolute',
-          bottom: 76,
+          bottom: 28,
           left: 32,
           zIndex: 10,
           animation: 'fadeIn 0.8s ease 0.8s both',
