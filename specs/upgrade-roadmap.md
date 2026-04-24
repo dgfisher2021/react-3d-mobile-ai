@@ -72,7 +72,8 @@ The current DemoContext + SettingsContext pattern won't scale past 15-20 values.
 - Always use selectors: `useSettingsStore(s => s.showGrid)`, never destructure
 - Use `useShallow` for multi-value selectors that return objects/arrays
 - Action-nonce pattern for imperative commands (resetCamera, screenshot)
-- Per-model overrides keyed by device ID in the store (migrate from local useState in GLBModelDemo)
+- Per-model overrides keyed by device ID in the store (migrate from local useState in GLBModelDemo). CAUTION: defaults must be computed from `deviceConfigs` at store init via `getDefaultOverrides(config)`, not hardcoded. The MacBook has specific defaults (position [0, -0.5, 0], scale 0.25) that differ from the iPhone.
+- `onModelInfo` callback and `modelInfo` state stay LOCAL in GLBModelDemo — this is read-only diagnostic data for the currently displayed device. Do NOT move it into the store. It's Tier 2 (refs/local) territory.
 
 ### Steps
 
@@ -99,52 +100,11 @@ The current DemoContext + SettingsContext pattern won't scale past 15-20 values.
 
 ---
 
-## 3. React Compiler 1.0
+## 3. Settings Panel Controls Upgrade
 
 ### Why third
 
-With 85+ planned controls, auto-memoization eliminates manual `React.memo` on every panel row component. The compiler is stable since October 2025. Our codebase is safe — all Three.js mutations happen in useEffect/useFrame, never during render.
-
-### Scope
-
-- Install `babel-plugin-react-compiler`
-- Configure in `vite.config.ts`
-- Test all 4 demos
-- Add `"use no memo"` directive to any component that false-positives
-
-### Steps
-
-1. Create branch `feature/react-compiler`
-2. `npm install babel-plugin-react-compiler`
-3. Update `vite.config.ts`:
-
-```ts
-react({
-  babel: {
-    plugins: [['babel-plugin-react-compiler', {}]],
-  },
-});
-```
-
-4. Build and test — watch for compiler warnings
-5. Specifically test DeviceModel.tsx (imperative mesh mutations in useEffect)
-6. Test the Three.js Canvas demo (large imperative useEffect)
-7. If any component throws false positives, add `"use no memo"` at the top
-
-### Success criteria
-
-- Compiler enabled, builds without errors
-- All 4 demos function identically
-- No visible performance regression
-- DeviceModel screen overlay sizing unchanged
-
----
-
-## 4. Settings Panel Controls Upgrade
-
-### Why fourth
-
-The current panel uses bare `<input type="number">` elements. The UX audit found 4 major issues. This spec replaces them with proper controls — Radix Slider for range inputs, draggable labels, color-coded axes, tooltips, bounds.
+The current panel uses bare `<input type="number">` elements. The UX audit found 4 major issues. Do this BEFORE the React Compiler so the compiler is tested against the final component set, not a partial one.
 
 ### Scope
 
@@ -164,7 +124,7 @@ The current panel uses bare `<input type="number">` elements. The UX audit found
 - Radix Collapsible for folder sections
 - Native `<button role="switch">` for toggles (already works, no Radix needed)
 - Native `<input type="number">` as fallback alongside slider for direct entry
-- Local useState during drag, commit to store on pointerup (prevents 60fps store churn)
+- During drag: local useState drives thumb position AND writes to a ref/CSS var for live 3D preview. On pointerup: commit final value to Zustand store. This gives live feedback while dragging without 60fps store churn.
 - `pointer-lock` during drag for infinite range
 
 ### Does NOT include
@@ -181,6 +141,48 @@ The current panel uses bare `<input type="number">` elements. The UX audit found
 - Escape closes the panel
 - Settings panel sections are logically grouped
 - iPhone and MacBook screen overlays still work correctly
+
+---
+
+## 4. React Compiler 1.0
+
+### Why fourth
+
+With the panel controls finalized (Spec 3), enable the compiler against the complete component set. Testing against the final components is less work than testing, adding 10+ new components, and wondering if any break it.
+
+### Scope
+
+- Install `babel-plugin-react-compiler`
+- Configure in `vite.config.ts`
+- Test all 4 demos + the new panel controls from Spec 3
+- Add `"use no memo"` directive to any component that false-positives
+
+### Steps
+
+1. Create branch `feature/react-compiler`
+2. `npm install babel-plugin-react-compiler`
+3. Update `vite.config.ts`:
+
+```ts
+react({
+  babel: {
+    plugins: [['babel-plugin-react-compiler', {}]],
+  },
+});
+```
+
+4. Build and test — watch for compiler warnings
+5. Test DeviceModel.tsx (imperative mesh mutations in useEffect)
+6. Test the Three.js Canvas demo (large imperative useEffect)
+7. Test all new Radix Slider/DraggableLabel components
+8. If any component throws false positives, add `"use no memo"` at the top
+
+### Success criteria
+
+- Compiler enabled, builds without errors
+- All 4 demos function identically
+- Panel controls (sliders, draggable labels) work correctly
+- No visible performance regression
 
 ---
 
@@ -242,6 +244,8 @@ Unify the lighting rig across demos. Currently Three.js Canvas has 7 lights, R3F
 ### Why last
 
 The iPhone and MacBook patterns are proven. The auto-sizing, auto-rotation, glass overlay, and retina rendering all work. Each remaining device just needs the right config values tuned via the settings panel.
+
+**NOTE:** The iMac and iPad entries already exist in `deviceConfigs.ts` with reasonable defaults. The auto-sizing and auto-rotation code in DeviceModel is generic. These devices might already partially work — check by switching to them in the sidebar before writing any code. They may only need `htmlPosition` tuning.
 
 ### Scope
 
