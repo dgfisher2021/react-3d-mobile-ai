@@ -55,9 +55,24 @@ export function DeviceModel({
     distanceFactor: number;
     htmlWidth: number;
     htmlHeight: number;
+    localW: number;
+    localH: number;
   } | null>(null);
   const [measured, setMeasured] = useState(false);
   const [autoRotation, setAutoRotation] = useState<[number, number, number]>([0, 0, 0]);
+
+  // Glass overlay material — matches iPhone's Screen_Glass from GLB
+  const glassMaterial = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: 0x070707,
+        roughness: 0,
+        transparent: true,
+        opacity: 0.111,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  );
 
   // Compute scale factor and bounding box info
   const { normalizeScale, bbox } = useMemo(() => {
@@ -133,7 +148,10 @@ export function DeviceModel({
       `[Screen ${config.id}] size: ${worldW.toFixed(3)} x ${worldH.toFixed(3)}, center: ${localCenter.x.toFixed(3)}, ${localCenter.y.toFixed(3)}, ${localCenter.z.toFixed(3)}`,
     );
 
-    const BASE_CSS_WIDTH = 393 * RENDER_SCALE;
+    // For portrait devices, base width is 393 (phone). For landscape, scale
+    // proportionally so the content fills the screen width.
+    const NATIVE_WIDTH = config.portrait ? 393 : Math.round(852 * (worldW / worldH));
+    const BASE_CSS_WIDTH = NATIVE_WIDTH * RENDER_SCALE;
     const autoHeight = Math.round(BASE_CSS_WIDTH * (worldH / worldW));
     // drei source: CSS matrix element = worldMatrixElement * (DF / 400)
     // For cssWidth pixels to cover worldW world units:
@@ -145,6 +163,8 @@ export function DeviceModel({
       distanceFactor: localDF,
       htmlWidth: BASE_CSS_WIDTH,
       htmlHeight: autoHeight,
+      localW: worldW / actualScale,
+      localH: worldH / actualScale,
     });
     onModelInfo?.({
       boundingBox: bbox,
@@ -249,7 +269,7 @@ export function DeviceModel({
               >
                 <div
                   style={{
-                    width: 393,
+                    width: autoScreenDims ? autoScreenDims.htmlWidth / RENDER_SCALE : 393,
                     height: autoScreenDims ? autoScreenDims.htmlHeight / RENDER_SCALE : 852,
                     transform: `scale(${RENDER_SCALE})`,
                     transformOrigin: 'top left',
@@ -259,6 +279,23 @@ export function DeviceModel({
                 </div>
               </div>
             </Html>
+          )}
+
+          {/* Glass overlay — matches iPhone's Screen_Glass material.
+              Rendered as a plane mesh at the screen position for devices
+              that don't have a native glass mesh in the GLB. */}
+          {showScreen && screenCenter && autoScreenDims && (
+            <mesh
+              position={[
+                screenCenter.x + screenPos[0],
+                screenCenter.y + screenPos[1],
+                screenCenter.z + screenPos[2] + 0.001,
+              ]}
+              rotation={htmlRot}
+              material={glassMaterial}
+            >
+              <planeGeometry args={[autoScreenDims.localW, autoScreenDims.localH]} />
+            </mesh>
           )}
         </group>
       </group>

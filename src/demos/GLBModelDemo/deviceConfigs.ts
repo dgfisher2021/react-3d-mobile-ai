@@ -67,7 +67,7 @@ export const DEVICES: DeviceConfig[] = [
     label: 'MacBook Pro',
     glbPath: `${base}macbook.glb`,
     screenNode: 'Cube008_2',
-    htmlPosition: [0, 2, 0.04],
+    htmlPosition: [0, 2.092, 0.042],
     htmlRotation: [(0.8 * Math.PI) / 180, 0, 0],
     htmlSize: { width: 668, height: 432 },
     distanceFactor: 1.5,
