@@ -57,6 +57,7 @@ export function DeviceModel({
     htmlHeight: number;
   } | null>(null);
   const [measured, setMeasured] = useState(false);
+  const [autoRotation, setAutoRotation] = useState<[number, number, number]>([0, 0, 0]);
 
   // Compute scale factor and bounding box info
   const { normalizeScale, bbox } = useMemo(() => {
@@ -152,6 +153,15 @@ export function DeviceModel({
       screenSize: { w: worldW, h: worldH },
       distanceFactor: localDF,
     });
+    // Auto-compute Html rotation from screen mesh orientation relative to group.
+    const meshQuat = new THREE.Quaternion();
+    mesh.getWorldQuaternion(meshQuat);
+    const groupQuat = new THREE.Quaternion();
+    groupRef.current!.getWorldQuaternion(groupQuat);
+    const relativeQuat = groupQuat.clone().invert().multiply(meshQuat);
+    const autoRot = new THREE.Euler().setFromQuaternion(relativeQuat);
+    setAutoRotation([autoRot.x, autoRot.y, autoRot.z]);
+
     setMeasured(true);
   }, [config.id, config.screenNode, normalizeScale, bbox, actualScale, scene, onModelInfo]);
 
@@ -196,7 +206,7 @@ export function DeviceModel({
         overrides.htmlRotation[1] * DEG2RAD,
         overrides.htmlRotation[2] * DEG2RAD,
       ]
-    : config.htmlRotation;
+    : autoRotation;
 
   return (
     <Float
