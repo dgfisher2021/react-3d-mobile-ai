@@ -1,5 +1,4 @@
 import { Float, Html, useGLTF } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
@@ -48,13 +47,9 @@ export function DeviceModel({
   const { scene } = useGLTF(config.glbPath);
   const groupRef = useRef<THREE.Group>(null);
   const screenMeshRef = useRef<THREE.Mesh | null>(null);
-  const bodyMeshRef = useRef<THREE.Mesh>(null!);
-  const frameMeshRef = useRef<THREE.Mesh>(null!);
-  const bezelMeshRef = useRef<THREE.Mesh>(null!);
   const reducedMotion = useReducedMotion();
   const { cornerRadius: ctxCornerRadius } = useSettingsContext();
   const [screenCenter, setScreenCenter] = useState<THREE.Vector3 | null>(null);
-  const [screenWorldSize, setScreenWorldSize] = useState<THREE.Vector3 | null>(null);
   const [autoScreenDims, setAutoScreenDims] = useState<{
     distanceFactor: number;
     htmlWidth: number;
@@ -91,9 +86,6 @@ export function DeviceModel({
           const glassWorldPos = new THREE.Vector3();
           child.getWorldPosition(glassWorldPos);
           const glassLocal = glassWorldPos.applyMatrix4(invMatrix);
-          console.log(
-            `[Glass] localPos: x=${glassLocal.x.toFixed(4)} y=${glassLocal.y.toFixed(4)} z=${glassLocal.z.toFixed(4)}`,
-          );
         }
       }
     });
@@ -134,34 +126,13 @@ export function DeviceModel({
     const worldCenter = new THREE.Vector3();
     mesh.getWorldPosition(worldCenter);
     const localCenter = worldCenter.applyMatrix4(invMatrix);
-    console.log(
-      `[Pos] localCenter: x=${localCenter.x.toFixed(4)} y=${localCenter.y.toFixed(4)} z=${localCenter.z.toFixed(4)}`,
-    );
 
-    // Slight oversize (1.02x) to cover axis-aligned bbox edge cases
-    const OVERSIZE = 1.0;
     const BASE_CSS_WIDTH = 393;
-    const screenW = worldW * OVERSIZE;
-    const screenH = worldH * OVERSIZE;
-    const autoHeight = Math.round(BASE_CSS_WIDTH * (screenH / screenW));
-    // drei source: CSS pixel scale = worldScale * (DF / 400)
-    // For cssWidth pixels to cover screenW world units:
-    //   cssWidth * worldScale * (DF / 400) = screenW
-    //   DF = screenW * 400 / (cssWidth * worldScale)
-    // worldScale = actualScale (the group's scale)
-    const localDF = (screenW * 400) / (BASE_CSS_WIDTH * actualScale);
-
-    // Also log Box3 for comparison
-    const box3Size = new THREE.Vector3();
-    new THREE.Box3().setFromObject(mesh).getSize(box3Size);
-    console.log(
-      `[Screen] geo: ${geoSize.x.toFixed(4)} x ${geoSize.y.toFixed(4)}` +
-        ` | geoWorld: ${worldW.toFixed(4)} x ${worldH.toFixed(4)}` +
-        ` | box3: ${box3Size.x.toFixed(4)} x ${box3Size.y.toFixed(4)} x ${box3Size.z.toFixed(4)}` +
-        ` | oversize=${OVERSIZE} → ${screenW.toFixed(4)} x ${screenH.toFixed(4)}` +
-        ` | localDF=${localDF.toFixed(4)}, htmlHeight=${autoHeight}` +
-        ` | actualScale=${actualScale.toFixed(4)}, worldScaleX=${Math.abs(worldScale.x).toFixed(4)}`,
-    );
+    const autoHeight = Math.round(BASE_CSS_WIDTH * (worldH / worldW));
+    // drei source: CSS matrix element = worldMatrixElement * (DF / 400)
+    // For cssWidth pixels to cover worldW world units:
+    //   DF = worldW * 400 / (cssWidth * parentScale)
+    const localDF = (worldW * 400) / (BASE_CSS_WIDTH * actualScale);
 
     setScreenCenter(localCenter.clone());
     setAutoScreenDims({
@@ -169,12 +140,11 @@ export function DeviceModel({
       htmlWidth: BASE_CSS_WIDTH,
       htmlHeight: autoHeight,
     });
-    setScreenWorldSize(new THREE.Vector3(screenW, screenH, 0));
     onModelInfo?.({
       boundingBox: bbox,
       normalizeScale,
       screenCenter: [localCenter.x, localCenter.y, localCenter.z],
-      screenSize: { w: screenW, h: screenH },
+      screenSize: { w: worldW, h: worldH },
       distanceFactor: localDF,
     });
     setMeasured(true);
@@ -241,6 +211,7 @@ export function DeviceModel({
                 width: autoScreenDims?.htmlWidth ?? config.htmlSize.width,
                 height: autoScreenDims?.htmlHeight ?? config.htmlSize.height,
                 borderRadius: config.portrait ? ctxCornerRadius : 8,
+                clipPath: `inset(0 round ${config.portrait ? ctxCornerRadius : 8}px)`,
                 overflow: 'hidden',
                 backfaceVisibility: 'hidden',
                 WebkitBackfaceVisibility: 'hidden',
