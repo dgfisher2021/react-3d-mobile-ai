@@ -1,27 +1,36 @@
 # MacBook Pro GLB Screen Overlay Setup
 
-## Briefing
+## READ THIS FIRST — Context for the agent
 
-This project renders 3D device models with a live React dashboard on their screens. The iPhone 13 Pro is already working — auto-sized screen overlay, retina rendering, depth occlusion. The MacBook Pro needs the same treatment.
+The user is building a portfolio project — a 3D device viewer that shows live React dashboards on GLB model screens. The iPhone 13 Pro is WORKING perfectly. Do not break it. The user wants the MacBook Pro to work the same way.
 
-The DeviceModel component at `src/demos/GLBModelDemo/DeviceModel.tsx` already handles everything generically — auto-sizing from geometry, distanceFactor formula, Float freeze during measurement, occlude="blending", CSS scaleX(-1) for mirroring. All you need to do is find the correct config values for the MacBook.
+The user cares deeply about quality and consistency. They've been tuning the iPhone for hours. They will test your work visually. If the iPhone breaks, you've failed regardless of whether the MacBook works.
 
-## What the iPhone config looks like (for reference)
+Read `.claude/skills/delegate-work/references/anti-patterns.md` before starting.
+
+### What the user specifically said
+- "shouldnt i have the ability to rotate the screen?" — they need an htmlRotation control in the settings panel
+- "BECAREFUL with whatever changes you make YOU MUCH NOT BREAK THE WORKING THING"
+- "make a new branch before we start ANY code changes"
+- "the screen needs to be rotated. its definitely not the same as on the phone"
+
+### Screenshots
+Look at the MacBook screenshots at `/mnt/c/Users/dustinf/Downloads/threejs/macbook-pro-screenshot.png` and `macbook-pro-screenshot-2.png`. The model renders correctly (screen facing camera) but the dashboard overlay content appears rotated/sideways.
+
+## What the iPhone config looks like (working reference)
 
 ```typescript
 {
   id: 'iphone',
-  screenNode: 'Body_Wallpaper_0',    // mesh to find + make black
-  htmlPosition: [0, 0, -0.025],      // Z offset to push Html to screen surface
-  htmlRotation: [0, 0, 0],           // no extra rotation needed
-  modelRotation: [0, Math.PI, 0],    // 180° Y to face camera
+  screenNode: 'Body_Wallpaper_0',
+  htmlPosition: [0, 0, -0.025],
+  htmlRotation: [0, 0, 0],
+  modelRotation: [0, Math.PI, 0],
   portrait: true,
 }
 ```
 
-## What you need to figure out for the MacBook
-
-The MacBook GLB (`public/macbook.glb`) has this mesh structure (from gltfjsx):
+## MacBook mesh structure (from gltfjsx)
 
 ```jsx
 <group position={[0.002, -0.038, 0.414]} rotation={[0.014, 0, 0]}>
@@ -32,75 +41,118 @@ The MacBook GLB (`public/macbook.glb`) has this mesh structure (from gltfjsx):
   </group>
 </group>
 <mesh geometry={nodes.keyboard.geometry} ... />
-<group position={[0, -0.1, 3.394]}>  ← trackpad area
+<group position={[0, -0.1, 3.394]}>  ← trackpad
   ...
 </group>
 ```
 
-Key differences from the iPhone:
-1. **The screen is inside a tilted group** — `rotation={[Math.PI / 2, 0, 0]}` on the parent group means the screen is rotated 90° on X. The `htmlRotation` needs to account for this.
-2. **The model may face the right direction already** — `modelRotation` might be `[0, 0, 0]` or `[0, Math.PI, 0]` depending on which way the MacBook faces natively.
-3. **The screen is landscape** — `portrait: false`. The LiveDashboard is phone-shaped (393x852) which will look narrow on a laptop screen. That's OK for now — just get it rendering correctly.
-4. **The Z offset will be different** — the screen depth position depends on the MacBook's geometry.
+## Known risks the previous spec missed
+
+1. **Constraint contradiction**: The previous spec said "don't modify DeviceModel.tsx" but Step 7 requires it. You WILL need to modify DeviceModel.tsx (to read htmlRotation from overrides) and SettingsPanel.tsx (to add the input). That's OK — just be careful not to break the iPhone. Test BOTH devices after every change.
+
+2. **Auto-sizing might give wrong dimensions**: DeviceModel computes screen size using `geometry.computeBoundingBox() * getWorldScale()`. This gives LOCAL mesh dimensions × scale, which works for the iPhone because its modelRotation (Y=180°) doesn't change scale magnitudes. The MacBook's screen mesh is inside a parent group with `rotation X=90°` which swaps Y and Z axes. The geometry approach might give the wrong width vs height. If the auto-sized overlay is the wrong aspect ratio, you may need to swap width and height, or use `Box3.setFromObject` for the MacBook instead. Report what you find.
+
+3. **Retina wrapper assumes portrait**: The RENDER_SCALE inner div uses `height: autoScreenDims.htmlHeight / RENDER_SCALE` and wraps a 393px-wide dashboard. For landscape, the dashboard will be phone-shaped (narrow) on a wide laptop screen. That's acceptable for now — don't try to redesign the dashboard layout.
+
+4. **CSS scaleX(-1)**: Applied when `config.modelRotation[1] !== 0`. The MacBook may have `modelRotation[1] = 0` (already faces camera from screenshots), so scaleX(-1) won't apply. But the screen content might still be mirrored due to the scene hierarchy's X rotation. If mirrored, you may need `scaleY(-1)` or a different CSS fix. Don't guess — test and report.
 
 ## Steps
 
-### 1. Test which way the MacBook faces
+### 1. Look at the screenshots
 
-Change the device picker to MacBook (it's already in the sidebar). Does the model show the screen or the back? If the back, you need `modelRotation: [0, Math.PI, 0]`. If the screen, use `[0, 0, 0]`.
+Read the screenshots at `/mnt/c/Users/dustinf/Downloads/threejs/macbook-pro-screenshot.png` and `macbook-pro-screenshot-2.png`. Understand what's currently happening visually before changing code.
 
-Add a `console.log` in the DeviceModel mount useEffect to print what it finds:
+### 2. Test which way the MacBook faces
+
+From the screenshots, the MacBook already faces the camera (screen visible). So `modelRotation` should be `[0, 0, 0]`. Confirm by checking if changing to `[0, Math.PI, 0]` flips it backwards. If the current `[0, 0, 0]` is correct, keep it.
+
+### 3. Check console output
+
+Switch to MacBook in the GLB demo sidebar. Check the browser console for:
+- `[Pos] localCenter:` — the screen mesh center position
+- `[Screen]` — the auto-computed dimensions and distanceFactor
+
+Report these values. They tell us if the auto-sizing is working correctly for the MacBook's rotated screen.
+
+### 4. Find the correct htmlRotation
+
+The dashboard appears rotated in the screenshots. The MacBook's screen mesh is inside a group with `rotation={[Math.PI / 2, 0, 0]}`. The Html inherits this rotation since it's inside the same group hierarchy.
+
+Try `htmlRotation: [-Math.PI / 2, 0, 0]` to counter the parent rotation. If the content is upside down, try `[Math.PI / 2, 0, 0]`. If mirrored, add `scaleX(-1)` or `scaleY(-1)`.
+
+### 5. Find the correct Z offset
+
+Start with `htmlPosition: [0, 0, -0.025]`. Adjust if the screen is too deep or floating. The screen surface depth depends on the MacBook's geometry — it might need a very different value.
+
+### 6. Add htmlRotation to ModelOverrides and settings panel
+
+So the user can tune the screen rotation without editing code:
+
+**deviceConfigs.ts**: Add `htmlRotation: [number, number, number]` to `ModelOverrides`. In `getDefaultOverrides()`, initialize from `config.htmlRotation` converted to degrees:
+```typescript
+htmlRotation: [
+  config.htmlRotation[0] * (180 / Math.PI),
+  config.htmlRotation[1] * (180 / Math.PI),
+  config.htmlRotation[2] * (180 / Math.PI),
+],
 ```
-console.log(`[MacBook] screenMesh found: ${!!screenMesh}, name: ${screenMesh?.name}`);
+
+**DeviceModel.tsx**: Where `config.htmlRotation` is used on the Html component, read from overrides instead (convert degrees back to radians):
+```typescript
+const htmlRot = overrides?.htmlRotation
+  ? [overrides.htmlRotation[0] * DEG2RAD, overrides.htmlRotation[1] * DEG2RAD, overrides.htmlRotation[2] * DEG2RAD]
+  : config.htmlRotation;
 ```
 
-### 2. Check the screen mesh center position
+**SettingsPanel.tsx**: Add a Vec3Input for "Screen Rotation (deg)" in the Model section, using `overrides.htmlRotation` and `onOverridesChange`.
 
-The existing code logs `[Pos] localCenter: x=... y=... z=...`. Switch to MacBook in the UI and check the console. The center might not be at origin like the iPhone.
+Test: change Screen Rotation in the settings panel and verify the overlay rotates independently from the model.
 
-### 3. Find the correct htmlRotation
+### 7. Update deviceConfigs.ts
 
-The MacBook's screen is inside a group with `rotation={[Math.PI / 2, 0, 0]}`. The Html needs to counter this within the scene hierarchy. Try `htmlRotation: [-Math.PI / 2, 0, 0]` first (the original config value). If the dashboard appears rotated, adjust.
+Once you have the right values for:
+- modelRotation
+- htmlRotation
+- htmlPosition
 
-### 4. Find the correct Z offset
+Update the MacBook entry in deviceConfigs.ts.
 
-Start with `htmlPosition: [0, 0, -0.025]` (same as iPhone). If the screen is too deep or too far forward, adjust. The wallpaper mesh should be made black — check that `screenNode: 'Cube008_2'` is the correct screen mesh (material name `screen.001` confirms it).
+### 8. Verify BOTH devices
 
-### 5. Update deviceConfigs.ts
-
-Once you have the right values, update the MacBook entry in `src/demos/GLBModelDemo/deviceConfigs.ts`.
-
-### 6. Verify
-
-- Switch to MacBook in the GLB demo sidebar
-- Screen overlay is visible on the MacBook screen
-- Dashboard content is readable (not mirrored, not rotated)
-- Rotating to the back hides the overlay (occlusion works)
-- Float animation doesn't break the positioning
-- Screen size matches the `Cube008_2` mesh
+- Switch to iPhone → screen overlay still works correctly (sizing, position, occlusion, retina)
+- Switch to MacBook → screen overlay is visible, correctly oriented, readable
+- Rotate to back on both → overlay hides (occlusion)
+- Float animation works on both
+- Settings panel shows the new Screen Rotation input on both devices
 
 ## Constraints
 
 - React 18 — no React 19 features
-- Branch: create `feature/macbook-screen` from `main`
+- Branch: `feature/macbook-screen` (already created)
 - Run `npx tsc --noEmit` after changes
 - Run `npx prettier --write` on files you touch
-- Don't modify DeviceModel.tsx unless absolutely necessary — the component is generic. Only change deviceConfigs.ts.
-- If DeviceModel needs changes for landscape support, document what and why before changing.
+- Test the IPHONE after every change to DeviceModel.tsx or SettingsPanel.tsx to ensure you haven't broken it
+- The dashboard is phone-shaped (393x852 portrait). It will look narrow on the laptop screen. That's OK for now.
 
-### 7. Add htmlRotation to settings panel
+## What's already handled by DeviceModel (don't reimplement)
 
-The user needs to be able to rotate the screen overlay independently from the model to align it with the MacBook's tilted lid. Add an `htmlRotation` Vec3 input (in degrees) to the Model section of the SettingsPanel, similar to the existing Position/Rotation/Scale inputs. This should override `config.htmlRotation` when changed.
-
-Add `htmlRotation: [number, number, number]` to `ModelOverrides` in `deviceConfigs.ts`. Default it from `config.htmlRotation` (converted to degrees). Apply it in DeviceModel where `config.htmlRotation` is currently used on the Html component.
-
-## What's already handled by DeviceModel
-
-You don't need to implement any of these — they're generic:
 - Auto-sizing from geometry (`geometry.computeBoundingBox + getWorldScale`)
 - distanceFactor formula (`worldW * 400 / (cssWidth * parentScale)`)
 - Retina rendering (RENDER_SCALE = 2, CSS transform: scale(2))
 - Depth occlusion (occlude="blending")
 - Float freeze during measurement
-- Black wallpaper on load
+- Black screen mesh on load
 - CSS scaleX(-1) when modelRotation Y ≠ 0
+
+## When you're done
+
+Report:
+1. What `modelRotation` value you used and why
+2. What `htmlRotation` value you used and why
+3. What `htmlPosition` Z offset worked
+4. The console log output showing screen mesh dimensions
+5. Whether the auto-sizing worked correctly or needed adjustment for the rotated screen
+6. Whether occlusion works
+7. Whether the iPhone still works after your changes
+8. What changes you made to DeviceModel.tsx and SettingsPanel.tsx
+9. Anything you're uncertain about
