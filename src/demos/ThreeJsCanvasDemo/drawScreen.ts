@@ -1,5 +1,5 @@
 /**
- * Paints the PPM Standards dashboard onto a 512x1024 canvas, which is then
+ * Paints the dashboard onto a 512x1024 canvas, which is then
  * used as a THREE.CanvasTexture on the phone's screen plane. This is a
  * static snapshot (the pure-THREE.js demo can't mount React into WebGL).
  */
@@ -251,11 +251,11 @@ export function drawScreen(canvas: HTMLCanvasElement): void {
   let cy = 54 * s;
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `bold ${Math.round(18 * s)}px -apple-system, sans-serif`;
-  ctx.fillText('Sprint Planning', 18 * s, cy);
+  ctx.fillText('3D Device Viewer', 18 * s, cy);
   cy += 18 * s;
   ctx.fillStyle = '#718096';
   ctx.font = `${Math.round(10 * s)}px -apple-system, sans-serif`;
-  ctx.fillText('PPM Technology • Reference Guide', 18 * s, cy);
+  ctx.fillText('React + Three.js Demo', 18 * s, cy);
   cy += 24 * s;
 
   // KPI cards (2x2)

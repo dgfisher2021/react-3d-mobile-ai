@@ -15,7 +15,7 @@ interface LiveDashboardProps {
 }
 
 /**
- * The full, interactive PPM Sprint Standards dashboard. Rendered at the phone's
+ * The full, interactive dashboard app. Rendered at the phone's
  * logical 393x852 screen size; the 3D host demo (CSS transform, R3F Html, etc.)
  * is responsible for scaling & positioning this inside the device bezel.
  */

@@ -100,10 +100,10 @@ export function Header({ theme, themeName, onToggleTheme }: HeaderProps) {
     >
       <div>
         <div style={{ fontSize: '1.05rem', fontWeight: 700, color: theme.headers }}>
-          Sprint Planning
+          3D Device Viewer
         </div>
         <div style={{ fontSize: '0.62rem', fontWeight: 500, color: theme.muted, marginTop: 1 }}>
-          PPM Technology • Reference Guide
+          React + Three.js Demo
         </div>
       </div>
       <div
