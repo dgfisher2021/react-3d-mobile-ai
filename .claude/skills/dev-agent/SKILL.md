@@ -88,21 +88,45 @@ Tell the user:
 
 ## Skills to invoke as needed
 
-| Situation                      | Skill                                              |
-| ------------------------------ | -------------------------------------------------- |
-| Delegating work to an agent    | `delegate-work`                                    |
-| Code review on changes         | `/react-code-audit`                                |
-| Committing changes             | `/git-commit`                                      |
-| Writing/updating docs          | `/dev-docs`                                        |
-| Auditing feature completeness  | `/analyze-feature`                                 |
-| Writing implementation plans   | `superpowers:writing-plans`                        |
-| Planning before coding         | `superpowers:brainstorming`                        |
-| Finishing a branch             | `superpowers:finishing-a-development-branch`       |
-| Verifying before claiming done | `superpowers:verification-before-completion`       |
-| Three.js/drei questions        | Context7 with `/pmndrs/drei` or `/mrdoob/three.js` |
-| UI/UX review                   | `ui-ux-usability-heuristics` or `ui-ux-pro-max`    |
-| Creating new skills            | `/meta-skill`                                      |
-| Creating new sub-agents        | `meta-agent`                                       |
+### Slash commands (type these)
+
+| Situation                     | Command             |
+| ----------------------------- | ------------------- |
+| Committing changes            | `/git-commit`       |
+| Code review on changes        | `/react-code-audit` |
+| Writing/updating docs         | `/dev-docs`         |
+| Auditing feature completeness | `/analyze-feature`  |
+| Creating new skills           | `/meta-skill`       |
+
+### Project skills (trigger automatically or invoke via Skill tool)
+
+| Situation                   | Skill           |
+| --------------------------- | --------------- |
+| Delegating work to an agent | `delegate-work` |
+
+### Plugin skills (trigger automatically)
+
+| Situation                      | Skill                                           |
+| ------------------------------ | ----------------------------------------------- |
+| Writing implementation plans   | `superpowers:writing-plans`                     |
+| Planning before coding         | `superpowers:brainstorming`                     |
+| Finishing a branch             | `superpowers:finishing-a-development-branch`    |
+| Verifying before claiming done | `superpowers:verification-before-completion`    |
+| UI/UX review                   | `ui-ux-usability-heuristics` or `ui-ux-pro-max` |
+
+### Sub-agents (spawn via Agent tool)
+
+| Situation               | Agent                                                     |
+| ----------------------- | --------------------------------------------------------- |
+| Executing a spec        | `spec-implementer` (`.claude/agents/spec-implementer.md`) |
+| Creating new sub-agents | `meta-agent`                                              |
+
+### External tools
+
+| Situation          | Tool                                               |
+| ------------------ | -------------------------------------------------- |
+| Three.js/drei docs | Context7: `/pmndrs/drei` or `/mrdoob/three.js`     |
+| Three.js viewer    | `mcp__claude_ai_Three_js_3D_Viewer__learn_threejs` |
 
 ## The user's goals
 
