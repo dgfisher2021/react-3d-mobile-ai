@@ -104,15 +104,13 @@ Tell the user:
 | --------------------------- | --------------- |
 | Delegating work to an agent | `delegate-work` |
 
-### Plugin skills (trigger automatically)
+### Plugin skills (available if plugins loaded — don't depend on them)
 
-| Situation                      | Skill                                           |
-| ------------------------------ | ----------------------------------------------- |
-| Writing implementation plans   | `superpowers:writing-plans`                     |
-| Planning before coding         | `superpowers:brainstorming`                     |
-| Finishing a branch             | `superpowers:finishing-a-development-branch`    |
-| Verifying before claiming done | `superpowers:verification-before-completion`    |
-| UI/UX review                   | `ui-ux-usability-heuristics` or `ui-ux-pro-max` |
+| Situation    | Skill                                           |
+| ------------ | ----------------------------------------------- |
+| UI/UX review | `ui-ux-usability-heuristics` or `ui-ux-pro-max` |
+
+Note: `superpowers:*` skills may be available if the user has the plugin installed. They're useful reference but our `delegate-work` skill handles the core delegation workflow. Don't invoke superpowers for delegation — use `delegate-work` instead.
 
 ### Sub-agents (spawn via Agent tool)
 
@@ -149,3 +147,15 @@ The reference files contain technical specifics that go stale. When you complete
 4. Do NOT update `references/working-with-user.md` unless the user explicitly tells you to — that's their style, not yours to change
 
 Commit reference updates alongside your feature work. The next session should find accurate information, not stale snapshots.
+
+## Token tracking
+
+When a sub-agent completes, the notification includes `total_tokens` and `duration_ms`. Report these to the user:
+
+- "Agent used 41k tokens in 4 minutes"
+- Track across the session — are we improving first-shot success?
+- The goal is fewest tokens for correct delivery. If an agent needs a remediation pass, that's a spec failure worth documenting.
+
+## Future improvements
+
+See [references/future-improvements.md](references/future-improvements.md) for ideas on parallelization, status lines, hooks, auto-positioning, and spec cleanup. These aren't blockers — the current setup works.
