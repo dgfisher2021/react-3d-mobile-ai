@@ -1,3 +1,4 @@
+import { GizmoHelper, GizmoViewport } from '@react-three/drei';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -49,7 +50,15 @@ export function SceneHelpers() {
 
   return (
     <>
-      {showAxes && <axesHelper args={[2]} position={[0, -2, 0]} />}
+      {showAxes && (
+        <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
+          <GizmoViewport
+            axisColors={['#E53E3E', '#38A169', '#3182CE']}
+            labelColor="white"
+            labels={['X', 'Y', 'Z']}
+          />
+        </GizmoHelper>
+      )}
       {showGrid && (
         <gridHelper
           args={[12, 24, '#1a2744', '#0f1a2e']}

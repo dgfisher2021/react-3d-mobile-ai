@@ -34,8 +34,8 @@ export function useSettingsContext(): SettingsContextType {
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [showAxes, setShowAxes] = useState(false);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showAxes, setShowAxes] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const [showParticles, setShowParticles] = useState(true);
   const [showScreen, setShowScreen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
