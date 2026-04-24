@@ -8,6 +8,15 @@ The user cares deeply about quality and consistency. They've been tuning the iPh
 
 Read `.claude/skills/delegate-work/references/anti-patterns.md` before starting.
 
+### Skills and tools to use
+
+- **Anti-patterns**: `.claude/skills/delegate-work/references/anti-patterns.md` — real mistakes from this session. Read first.
+- **Code audit**: Run `/react-code-audit quick` on any files you modify before committing.
+- **Verification**: Use `superpowers:verification-before-completion` — verify the app actually runs and both devices work before claiming you're done.
+- **Context7**: Use `mcp__claude_ai_Context7__query-docs` with library ID `/pmndrs/drei` if you need to understand how drei's Html `transform` mode, `distanceFactor`, or `occlude` work. Don't guess at the math.
+- **Three.js docs**: Use `mcp__claude_ai_Context7__query-docs` with library ID `/mrdoob/three.js` for geometry, bounding box, or world transform questions.
+- **Three.js viewer**: `mcp__claude_ai_Three_js_3D_Viewer__learn_threejs` is available for testing 3D concepts.
+
 ### What the user specifically said
 - "shouldnt i have the ability to rotate the screen?" — they need an htmlRotation control in the settings panel
 - "BECAREFUL with whatever changes you make YOU MUCH NOT BREAK THE WORKING THING"
