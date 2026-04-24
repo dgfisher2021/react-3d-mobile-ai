@@ -88,6 +88,12 @@ Once you have the right values, update the MacBook entry in `src/demos/GLBModelD
 - Don't modify DeviceModel.tsx unless absolutely necessary — the component is generic. Only change deviceConfigs.ts.
 - If DeviceModel needs changes for landscape support, document what and why before changing.
 
+### 7. Add htmlRotation to settings panel
+
+The user needs to be able to rotate the screen overlay independently from the model to align it with the MacBook's tilted lid. Add an `htmlRotation` Vec3 input (in degrees) to the Model section of the SettingsPanel, similar to the existing Position/Rotation/Scale inputs. This should override `config.htmlRotation` when changed.
+
+Add `htmlRotation: [number, number, number]` to `ModelOverrides` in `deviceConfigs.ts`. Default it from `config.htmlRotation` (converted to degrees). Apply it in DeviceModel where `config.htmlRotation` is currently used on the Html component.
+
 ## What's already handled by DeviceModel
 
 You don't need to implement any of these — they're generic:
