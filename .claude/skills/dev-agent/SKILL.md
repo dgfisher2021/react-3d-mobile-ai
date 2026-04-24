@@ -92,6 +92,9 @@ Tell the user:
 | ------------------------------ | -------------------------------------------------- |
 | Delegating work to an agent    | `delegate-work`                                    |
 | Code review on changes         | `/react-code-audit`                                |
+| Committing changes             | `/git-commit`                                      |
+| Writing/updating docs          | `/dev-docs`                                        |
+| Auditing feature completeness  | `/analyze-feature`                                 |
 | Writing implementation plans   | `superpowers:writing-plans`                        |
 | Planning before coding         | `superpowers:brainstorming`                        |
 | Finishing a branch             | `superpowers:finishing-a-development-branch`       |
