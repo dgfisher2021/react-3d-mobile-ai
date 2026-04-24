@@ -2,6 +2,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { ViewPresets } from '../../components/ViewPresets';
+import {
+  AUTO_RESET,
+  AUTO_ROTATE,
+  BG_GRADIENT,
+  CAMERA,
+  VIEW_PRESETS,
+} from '../../constants/demoSettings';
+import { useDemoContext } from '../../context/DemoContext';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { buildPhone } from './buildPhone';
 import { drawScreen } from './drawScreen';
@@ -23,6 +32,7 @@ interface OrbitState {
  * has inertia, auto-rotate, and preset view buttons.
  */
 export default function ThreeJsCanvasDemo() {
+  const { autoRotate, setAutoRotate } = useDemoContext();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const reducedMotion = useReducedMotion();
   const reducedMotionRef = useRef(reducedMotion);
@@ -30,14 +40,19 @@ export default function ThreeJsCanvasDemo() {
   const stateRef = useRef<OrbitState>({
     isDragging: false,
     prev: { x: 0, y: 0 },
-    targetRot: { x: -0.15, y: 0.3 },
-    currentRot: { x: -0.15, y: 0.3 },
+    targetRot: { x: AUTO_RESET.rad.x, y: AUTO_RESET.rad.y },
+    currentRot: { x: AUTO_RESET.rad.x, y: AUTO_RESET.rad.y },
     velocity: { x: 0, y: 0 },
     autoRotate: !reducedMotion,
-    zoom: 5.2,
-    targetZoom: 5.2,
+    zoom: CAMERA.z,
+    targetZoom: CAMERA.z,
   });
   const [hint, setHint] = useState(true);
+
+  // Sync context autoRotate → imperative ref
+  useEffect(() => {
+    stateRef.current.autoRotate = autoRotate;
+  }, [autoRotate]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -45,8 +60,8 @@ export default function ThreeJsCanvasDemo() {
     const { clientWidth: CW, clientHeight: CH } = container;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(35, CW / CH, 0.1, 100);
-    camera.position.set(0, 0, 5.2);
+    const camera = new THREE.PerspectiveCamera(CAMERA.fov, CW / CH, 0.1, 100);
+    camera.position.set(0, 0, CAMERA.z);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(CW, CH);
@@ -148,7 +163,7 @@ export default function ThreeJsCanvasDemo() {
       const reduce = reducedMotionRef.current;
 
       if (st.autoRotate && !st.isDragging && !reduce) {
-        st.targetRot.y += 0.002;
+        st.targetRot.y += AUTO_ROTATE.imperativeRadPerFrame;
       }
 
       if (!st.isDragging) {
@@ -194,6 +209,7 @@ export default function ThreeJsCanvasDemo() {
       const st = stateRef.current;
       st.isDragging = true;
       st.autoRotate = false;
+      setAutoRotate(false);
       st.prev = getPos(e);
       st.velocity = { x: 0, y: 0 };
       setHint(false);
@@ -221,7 +237,10 @@ export default function ThreeJsCanvasDemo() {
 
     const onWheel = (e: WheelEvent) => {
       const st = stateRef.current;
-      st.targetZoom = Math.max(2.5, Math.min(7, st.targetZoom + e.deltaY * 0.003));
+      st.targetZoom = Math.max(
+        CAMERA.minDistance,
+        Math.min(CAMERA.maxDistance, st.targetZoom + e.deltaY * 0.003),
+      );
     };
 
     const canvas = renderer.domElement;
@@ -262,41 +281,26 @@ export default function ThreeJsCanvasDemo() {
     };
   }, []);
 
+  const applyPreset = useCallback(
+    (index: number) => {
+      const st = stateRef.current;
+      const p = VIEW_PRESETS[index];
+      st.targetRot = { x: p.rad.x, y: p.rad.y };
+      st.velocity = { x: 0, y: 0 };
+      st.autoRotate = false;
+      setAutoRotate(false);
+    },
+    [setAutoRotate],
+  );
+
   const resetView = useCallback(() => {
     const st = stateRef.current;
-    st.targetRot = { x: -0.15, y: 0.3 };
+    st.targetRot = { x: AUTO_RESET.rad.x, y: AUTO_RESET.rad.y };
     st.velocity = { x: 0, y: 0 };
-    st.targetZoom = 5.2;
+    st.targetZoom = CAMERA.z;
     st.autoRotate = true;
-  }, []);
-
-  const viewFront = useCallback(() => {
-    const st = stateRef.current;
-    st.targetRot = { x: 0, y: 0 };
-    st.velocity = { x: 0, y: 0 };
-    st.autoRotate = false;
-  }, []);
-
-  const viewAngled = useCallback(() => {
-    const st = stateRef.current;
-    st.targetRot = { x: -0.2, y: 0.6 };
-    st.velocity = { x: 0, y: 0 };
-    st.autoRotate = false;
-  }, []);
-
-  const viewBack = useCallback(() => {
-    const st = stateRef.current;
-    st.targetRot = { x: -0.1, y: Math.PI };
-    st.velocity = { x: 0, y: 0 };
-    st.autoRotate = false;
-  }, []);
-
-  const buttons = [
-    { label: 'Front', action: viewFront },
-    { label: 'Angle', action: viewAngled },
-    { label: 'Back', action: viewBack },
-    { label: 'Auto', action: resetView },
-  ];
+    setAutoRotate(true);
+  }, [setAutoRotate]);
 
   return (
     <div
@@ -305,7 +309,7 @@ export default function ThreeJsCanvasDemo() {
         height: '100%',
         position: 'relative',
         overflow: 'hidden',
-        background: 'linear-gradient(160deg, #0a0f1a 0%, #0d1b2e 40%, #0a1628 100%)',
+        background: BG_GRADIENT,
       }}
     >
       <div
@@ -323,41 +327,7 @@ export default function ThreeJsCanvasDemo() {
         ]}
       />
 
-      <div
-        style={{
-          position: 'absolute',
-          right: 24,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          zIndex: 10,
-          animation: 'slideInRight 0.6s ease 0.6s both',
-        }}
-      >
-        {buttons.map((btn, i) => (
-          <button
-            key={i}
-            onClick={btn.action}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10,
-              padding: '10px 14px',
-              color: '#CBD5E0',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              fontFamily: "'DM Sans', sans-serif",
-              letterSpacing: '0.3px',
-            }}
-          >
-            {btn.label}
-          </button>
-        ))}
-      </div>
+      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
     </div>
   );
 }

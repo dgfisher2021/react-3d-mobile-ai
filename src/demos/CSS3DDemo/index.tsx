@@ -1,42 +1,75 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { ViewPresets } from '../../components/ViewPresets';
+import {
+  AUTO_RESET,
+  AUTO_ROTATE,
+  BG_GRADIENT,
+  CAMERA,
+  VIEW_PRESETS,
+} from '../../constants/demoSettings';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
 import { THEMES } from '../../constants/themes';
-import type { ThemeName } from '../../types';
+import { useDemoContext } from '../../context/DemoContext';
 
 interface Rotation {
   x: number;
   y: number;
 }
 
-const PRESETS: { label: string; rotation: Rotation }[] = [
-  { label: 'Front', rotation: { x: 0, y: 0 } },
-  { label: 'Angle', rotation: { x: -8, y: 22 } },
-  { label: 'Tilt', rotation: { x: -20, y: -15 } },
-  { label: 'Flat', rotation: { x: -55, y: 0 } },
-];
+const PHONE_W = 393;
+const PHONE_H = 852;
 
-/**
- * Demo 2: CSS 3D transforms. Rotates a div tree via rotateX/rotateY on
- * `perspective`. The "screen" is the actual <LiveDashboard/> React tree,
- * so every tap/scroll inside the phone is fully interactive.
- */
+// Match WebGL: phone occupies 3.0 / (2 * z * tan(fov/2)) of viewport height
+const PHONE_VIEWPORT_RATIO = 3.0 / (2 * CAMERA.z * Math.tan(((CAMERA.fov / 2) * Math.PI) / 180));
+const FOV_RAD_HALF = ((CAMERA.fov / 2) * Math.PI) / 180;
+
 export default function CSS3DDemo() {
-  const [themeName, setThemeName] = useState<ThemeName>('dark');
-  const [rotation, setRotation] = useState<Rotation>({ x: -8, y: 22 });
+  const { themeName, toggleTheme, autoRotate, setAutoRotate } = useDemoContext();
+  const [rotation, setRotation] = useState<Rotation>({
+    x: AUTO_RESET.cssDeg.x,
+    y: AUTO_RESET.cssDeg.y,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [hint, setHint] = useState(true);
+  const [viewportH, setViewportH] = useState(window.innerHeight);
   const dragStart = useRef<Rotation & { px: number; py: number }>({ x: 0, y: 0, px: 0, py: 0 });
+  const rotationRef = useRef(rotation);
+  rotationRef.current = rotation;
+
+  // Track viewport height for responsive scaling
+  useEffect(() => {
+    const onResize = () => setViewportH(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Auto-rotation animation loop
+  useEffect(() => {
+    if (!autoRotate || isDragging) return;
+    let frameId: number;
+    const animate = () => {
+      setRotation((prev) => ({ ...prev, y: prev.y + AUTO_ROTATE.cssDegPerFrame }));
+      frameId = requestAnimationFrame(animate);
+    };
+    frameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameId);
+  }, [autoRotate, isDragging]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      // Only drag from the surrounding area, not the phone screen itself
       if ((e.target as HTMLElement).closest('[data-phone-screen]')) return;
       setIsDragging(true);
-      dragStart.current = { x: rotation.x, y: rotation.y, px: e.clientX, py: e.clientY };
+      setAutoRotate(false);
+      dragStart.current = {
+        x: rotationRef.current.x,
+        y: rotationRef.current.y,
+        px: e.clientX,
+        py: e.clientY,
+      };
       setHint(false);
     },
-    [rotation],
+    [setAutoRotate],
   );
 
   useEffect(() => {
@@ -59,6 +92,22 @@ export default function CSS3DDemo() {
   }, [isDragging]);
 
   const theme = THEMES[themeName];
+  const phoneScale = (PHONE_VIEWPORT_RATIO * viewportH) / PHONE_H;
+  const perspective = viewportH / (2 * Math.tan(FOV_RAD_HALF));
+
+  const applyPreset = useCallback(
+    (index: number) => {
+      setAutoRotate(false);
+      const p = VIEW_PRESETS[index];
+      setRotation({ x: p.cssDeg.x, y: p.cssDeg.y });
+    },
+    [setAutoRotate],
+  );
+
+  const resetView = useCallback(() => {
+    setAutoRotate(true);
+    setRotation({ x: AUTO_RESET.cssDeg.x, y: AUTO_RESET.cssDeg.y });
+  }, [setAutoRotate]);
 
   return (
     <div
@@ -67,7 +116,7 @@ export default function CSS3DDemo() {
         width: '100%',
         height: '100%',
         overflow: 'hidden',
-        background: 'linear-gradient(160deg, #080c18 0%, #0d1b2e 40%, #0a1628 100%)',
+        background: BG_GRADIENT,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -115,52 +164,18 @@ export default function CSS3DDemo() {
         ]}
       />
 
-      {/* Preset buttons */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 24,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          zIndex: 10,
-          animation: 'slideInRight 0.6s ease 0.6s both',
-        }}
-      >
-        {PRESETS.map((p) => (
-          <button
-            key={p.label}
-            onClick={() => setRotation(p.rotation)}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10,
-              padding: '10px 14px',
-              color: '#CBD5E0',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              fontFamily: "'DM Sans', sans-serif",
-              letterSpacing: '0.3px',
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
 
-      {/* 3D phone frame */}
-      <div style={{ perspective: 1200, perspectiveOrigin: '50% 50%' }}>
+      {/* 3D phone frame — scaled to match WebGL viewport ratio */}
+      <div style={{ perspective, perspectiveOrigin: '50% 50%' }}>
         <div
           style={{
-            width: 393,
-            height: 852,
+            width: PHONE_W,
+            height: PHONE_H,
             transformStyle: 'preserve-3d',
-            transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
-            transition: isDragging ? 'none' : 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+            transform: `scale(${phoneScale}) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+            transition:
+              isDragging || autoRotate ? 'none' : 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
             position: 'relative',
           }}
         >
@@ -210,8 +225,8 @@ export default function CSS3DDemo() {
           <div
             data-phone-screen="true"
             style={{
-              width: 393,
-              height: 852,
+              width: PHONE_W,
+              height: PHONE_H,
               borderRadius: 42,
               overflow: 'hidden',
               position: 'relative',
@@ -220,10 +235,7 @@ export default function CSS3DDemo() {
               transform: 'translateZ(0px)',
             }}
           >
-            <LiveDashboard
-              themeName={themeName}
-              onToggleTheme={() => setThemeName((t) => (t === 'dark' ? 'light' : 'dark'))}
-            />
+            <LiveDashboard themeName={themeName} onToggleTheme={toggleTheme} />
           </div>
           {/* Glass reflection */}
           <div

@@ -1,9 +1,12 @@
 import { lazy, Suspense, useState } from 'react';
 import { DemoTabs, type DemoTab } from './components/DemoTabs';
+import { BG_GRADIENT } from './constants/demoSettings';
+import { DemoProvider } from './context/DemoContext';
 
 const ThreeJsCanvasDemo = lazy(() => import('./demos/ThreeJsCanvasDemo'));
 const CSS3DDemo = lazy(() => import('./demos/CSS3DDemo'));
 const R3FDemo = lazy(() => import('./demos/R3FDemo'));
+const GLBModelDemo = lazy(() => import('./demos/GLBModelDemo'));
 
 const TABS: DemoTab[] = [
   {
@@ -21,20 +24,28 @@ const TABS: DemoTab[] = [
     label: 'R3F + drei · Live',
     blurb: 'react-three-fiber with drei <Html transform> portaling the live app.',
   },
+  {
+    id: 'glb',
+    label: 'GLB Models · Live',
+    blurb: 'Pre-made 3D device models with the live React app on each screen.',
+  },
 ];
 
 export default function App() {
   const [active, setActive] = useState<string>('r3f');
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      <Suspense fallback={<LoadingView />}>
-        {active === 'threejs' && <ThreeJsCanvasDemo />}
-        {active === 'css3d' && <CSS3DDemo />}
-        {active === 'r3f' && <R3FDemo />}
-      </Suspense>
-      <DemoTabs tabs={TABS} activeId={active} onChange={setActive} />
-    </div>
+    <DemoProvider>
+      <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+        <Suspense fallback={<LoadingView />}>
+          {active === 'threejs' && <ThreeJsCanvasDemo />}
+          {active === 'css3d' && <CSS3DDemo />}
+          {active === 'r3f' && <R3FDemo />}
+          {active === 'glb' && <GLBModelDemo />}
+        </Suspense>
+        <DemoTabs tabs={TABS} activeId={active} onChange={setActive} />
+      </div>
+    </DemoProvider>
   );
 }
 
@@ -47,7 +58,7 @@ function LoadingView() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(160deg, #080c18, #0d1b2e, #0a1628)',
+        background: BG_GRADIENT,
         color: '#718096',
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: '0.75rem',

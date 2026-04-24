@@ -2,39 +2,26 @@ import { Float, Html } from '@react-three/drei';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { LiveDashboard } from '../../components/dashboard/LiveDashboard';
+import { FLOAT } from '../../constants/demoSettings';
+import { PHONE } from '../../demos/ThreeJsCanvasDemo/phoneConstants';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { ThemeName } from '../../types';
+import { roundedRect } from '../../utils/roundedRect';
 
 interface PhoneMeshProps {
   themeName: ThemeName;
   onToggleTheme: () => void;
 }
 
-const PHONE_W = 1.44;
-const PHONE_H = 3.0;
-const PHONE_D = 0.16;
-const CORNER = 0.18;
+const PHONE_W = PHONE.w;
+const PHONE_H = PHONE.h;
+const PHONE_D = PHONE.d;
+const CORNER = PHONE.corner;
 const BEVEL_T = 0.015;
 // The ExtrudeGeometry bevel pushes the visible front surface of the body
 // from PHONE_D/2 out to PHONE_D/2 + BEVEL_T. Anything screen-side must sit
 // in front of FRONT_Z or it is hidden inside the titanium frame.
 const FRONT_Z = PHONE_D / 2 + BEVEL_T;
-
-function roundedRect(w: number, h: number, r: number): THREE.Shape {
-  const s = new THREE.Shape();
-  const x = -w / 2;
-  const y = -h / 2;
-  s.moveTo(x + r, y);
-  s.lineTo(x + w - r, y);
-  s.quadraticCurveTo(x + w, y, x + w, y + r);
-  s.lineTo(x + w, y + h - r);
-  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  s.lineTo(x + r, y + h);
-  s.quadraticCurveTo(x, y + h, x, y + h - r);
-  s.lineTo(x, y + r);
-  s.quadraticCurveTo(x, y, x + r, y);
-  return s;
-}
 
 /**
  * The R3F-authored phone. Uses drei's Float for idle motion and Html
@@ -113,9 +100,9 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
 
   return (
     <Float
-      speed={reducedMotion ? 0 : 1.5}
-      rotationIntensity={reducedMotion ? 0 : 0.1}
-      floatIntensity={reducedMotion ? 0 : 0.3}
+      speed={reducedMotion ? 0 : FLOAT.speed}
+      rotationIntensity={reducedMotion ? 0 : FLOAT.rotationIntensity}
+      floatIntensity={reducedMotion ? 0 : FLOAT.floatIntensity}
     >
       <group>
         {/* Titanium frame — MeshPhysicalMaterial + clearcoat so the

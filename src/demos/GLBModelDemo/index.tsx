@@ -1,22 +1,27 @@
-import { ContactShadows, Environment, OrbitControls } from '@react-three/drei';
+import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { useCallback, useRef } from 'react';
+import { Suspense, useCallback, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { DemoOverlay } from '../../components/DemoOverlay';
-import { ViewPresets } from '../../components/ViewPresets';
+import { SidebarButton, ViewPresets } from '../../components/ViewPresets';
 import {
   AUTO_RESET,
+  AUTO_ROTATE,
   BG_GRADIENT,
   CAMERA,
-  AUTO_ROTATE,
   VIEW_PRESETS,
 } from '../../constants/demoSettings';
 import { useDemoContext } from '../../context/DemoContext';
-import { PhoneMesh } from './PhoneMesh';
+import { DeviceModel } from './DeviceModel';
+import { DEVICES } from './deviceConfigs';
 
-export default function R3FDemo() {
+export default function GLBModelDemo() {
   const { themeName, toggleTheme, autoRotate, setAutoRotate } = useDemoContext();
+  const [deviceId, setDeviceId] = useState('iphone');
+  const [showScreen, setShowScreen] = useState(true);
   const controlsRef = useRef<any>(null);
+
+  const config = DEVICES.find((d) => d.id === deviceId) ?? DEVICES[0];
 
   const applyPreset = useCallback(
     (index: number) => {
@@ -38,6 +43,11 @@ export default function R3FDemo() {
     c.setPolarAngle(AUTO_RESET.orbit.polar);
   }, [setAutoRotate]);
 
+  // Preload all models
+  for (const d of DEVICES) {
+    useGLTF.preload(d.glbPath);
+  }
+
   return (
     <div
       style={{
@@ -51,14 +61,27 @@ export default function R3FDemo() {
       <Canvas
         camera={{ position: [0, 0, CAMERA.z], fov: CAMERA.fov }}
         dpr={[1, 2]}
-        gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
+        gl={{
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.05,
+        }}
       >
         <Environment preset="studio" />
         <ambientLight intensity={0.15} />
         <directionalLight position={[3, 5, 4]} intensity={1.2} />
         <directionalLight position={[-3, 2, 4]} intensity={0.5} color="#8ecdf7" />
         <directionalLight position={[-2, -1, -3]} intensity={0.9} color="#5eead4" />
-        <PhoneMesh themeName={themeName} onToggleTheme={toggleTheme} />
+
+        <Suspense fallback={null}>
+          <DeviceModel
+            key={config.id}
+            config={config}
+            themeName={themeName}
+            onToggleTheme={toggleTheme}
+            showScreen={showScreen}
+          />
+        </Suspense>
+
         <ContactShadows position={[0, -2, 0]} opacity={0.35} scale={8} blur={2.5} />
         <OrbitControls
           ref={controlsRef}
@@ -76,16 +99,30 @@ export default function R3FDemo() {
       </Canvas>
 
       <DemoOverlay
-        subtitle="R3F + drei"
-        hint="Orbit to rotate • App is fully interactive"
+        subtitle="3D Models"
+        hint="Orbit to rotate • Toggle Screen to overlay the app"
         badges={[
-          { label: '@react-three/fiber', color: '#319795' },
-          { label: 'iPhone 15 Pro', color: '#718096' },
+          { label: 'GLB Models', color: '#319795' },
+          { label: config.label, color: '#718096' },
           { label: 'Live React App', color: '#48BB78' },
         ]}
       />
 
-      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
+      <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView}>
+        {DEVICES.map((d) => (
+          <SidebarButton
+            key={d.id}
+            label={d.label}
+            active={d.id === deviceId}
+            onClick={() => setDeviceId(d.id)}
+          />
+        ))}
+        <SidebarButton
+          label={showScreen ? 'Screen ●' : 'Screen ○'}
+          active={showScreen}
+          onClick={() => setShowScreen((s) => !s)}
+        />
+      </ViewPresets>
     </div>
   );
 }
