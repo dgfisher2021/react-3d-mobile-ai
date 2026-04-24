@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { useCallback, useRef } from 'react';
 import * as THREE from 'three';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { SettingsPanel } from '../../components/SettingsPanel';
 import { ViewPresets } from '../../components/ViewPresets';
 import {
   AUTO_RESET,
@@ -11,6 +12,7 @@ import {
   AUTO_ROTATE,
   VIEW_PRESETS,
 } from '../../constants/demoSettings';
+import { SceneHelpers } from '../../components/SceneHelpers';
 import { useDemoContext } from '../../context/DemoContext';
 import { PhoneMesh } from './PhoneMesh';
 
@@ -59,6 +61,7 @@ export default function R3FDemo() {
         <directionalLight position={[-3, 2, 4]} intensity={0.5} color="#8ecdf7" />
         <directionalLight position={[-2, -1, -3]} intensity={0.9} color="#5eead4" />
         <PhoneMesh themeName={themeName} onToggleTheme={toggleTheme} />
+        <SceneHelpers />
         <ContactShadows position={[0, -2, 0]} opacity={0.35} scale={8} blur={2.5} />
         <OrbitControls
           ref={controlsRef}
@@ -86,6 +89,7 @@ export default function R3FDemo() {
       />
 
       <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
+      <SettingsPanel />
     </div>
   );
 }

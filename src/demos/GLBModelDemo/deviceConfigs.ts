@@ -1,3 +1,19 @@
+export interface ModelOverrides {
+  position: [number, number, number];
+  rotation: [number, number, number]; // degrees for UI, converted to radians for Three.js
+  scale: number; // multiplier on top of normalizeScale
+  screenOffset: [number, number, number];
+}
+
+export function getDefaultOverrides(config: DeviceConfig): ModelOverrides {
+  return {
+    position: [0, 0, 0],
+    rotation: [0, 0, 0],
+    scale: 1,
+    screenOffset: config.htmlPosition,
+  };
+}
+
 export interface DeviceConfig {
   id: string;
   label: string;

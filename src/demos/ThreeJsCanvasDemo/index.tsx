@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { SettingsPanel } from '../../components/SettingsPanel';
 import { ViewPresets } from '../../components/ViewPresets';
 import {
   AUTO_RESET,
@@ -32,7 +33,7 @@ interface OrbitState {
  * has inertia, auto-rotate, and preset view buttons.
  */
 export default function ThreeJsCanvasDemo() {
-  const { autoRotate, setAutoRotate } = useDemoContext();
+  const { autoRotate, setAutoRotate, showAxes, showGrid, showParticles } = useDemoContext();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const reducedMotion = useReducedMotion();
   const reducedMotionRef = useRef(reducedMotion);
@@ -48,11 +49,17 @@ export default function ThreeJsCanvasDemo() {
     targetZoom: CAMERA.z,
   });
   const [hint, setHint] = useState(true);
+  const helpersRef = useRef({ showAxes, showGrid, showParticles });
 
   // Sync context autoRotate → imperative ref
   useEffect(() => {
     stateRef.current.autoRotate = autoRotate;
   }, [autoRotate]);
+
+  // Sync environment toggles → imperative ref
+  useEffect(() => {
+    helpersRef.current = { showAxes, showGrid, showParticles };
+  }, [showAxes, showGrid, showParticles]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -126,12 +133,18 @@ export default function ThreeJsCanvasDemo() {
     accentRight.position.set(3, -1, 1);
     scene.add(accentRight);
 
+    // Axes helper
+    const axesHelper = new THREE.AxesHelper(2);
+    axesHelper.visible = helpersRef.current.showAxes;
+    scene.add(axesHelper);
+
     // Floor grid
     const gridHelper = new THREE.GridHelper(12, 24, 0x1a2744, 0x0f1a2e);
     gridHelper.position.y = -2.2;
     const gridMat = gridHelper.material as THREE.Material;
     gridMat.opacity = 0.3;
     gridMat.transparent = true;
+    gridHelper.visible = helpersRef.current.showGrid;
     scene.add(gridHelper);
 
     // Floating particles
@@ -151,6 +164,7 @@ export default function ThreeJsCanvasDemo() {
       opacity: 0.5,
     });
     const particles = new THREE.Points(particleGeo, particleMat);
+    particles.visible = helpersRef.current.showParticles;
     scene.add(particles);
 
     let frameId = 0;
@@ -161,6 +175,12 @@ export default function ThreeJsCanvasDemo() {
       const st = stateRef.current;
       const elapsed = clock.getElapsedTime();
       const reduce = reducedMotionRef.current;
+
+      // Sync environment helper visibility from context
+      const helpers = helpersRef.current;
+      axesHelper.visible = helpers.showAxes;
+      gridHelper.visible = helpers.showGrid;
+      particles.visible = helpers.showParticles;
 
       if (st.autoRotate && !st.isDragging && !reduce) {
         st.targetRot.y += AUTO_ROTATE.imperativeRadPerFrame;
@@ -328,6 +348,7 @@ export default function ThreeJsCanvasDemo() {
       />
 
       <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
+      <SettingsPanel />
     </div>
   );
 }

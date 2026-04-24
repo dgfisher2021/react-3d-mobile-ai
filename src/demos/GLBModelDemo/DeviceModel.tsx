@@ -6,19 +6,38 @@ import { FLOAT } from '../../constants/demoSettings';
 import { PHONE } from '../ThreeJsCanvasDemo/phoneConstants';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { ThemeName } from '../../types';
-import type { DeviceConfig } from './deviceConfigs';
+import type { DeviceConfig, ModelOverrides } from './deviceConfigs';
 
 /** Target height in world units — matches the procedural phone in the other demos. */
 const TARGET_H = PHONE.h; // 3.0
+
+const DEG2RAD = Math.PI / 180;
+
+export interface ModelInfo {
+  boundingBox: { w: number; h: number; d: number };
+  normalizeScale: number;
+  screenCenter: [number, number, number] | null;
+  screenSize: { w: number; h: number } | null;
+  distanceFactor: number;
+}
 
 interface DeviceModelProps {
   config: DeviceConfig;
   themeName: ThemeName;
   onToggleTheme: () => void;
   showScreen: boolean;
+  overrides?: ModelOverrides;
+  onModelInfo?: (info: ModelInfo) => void;
 }
 
-export function DeviceModel({ config, themeName, onToggleTheme, showScreen }: DeviceModelProps) {
+export function DeviceModel({
+  config,
+  themeName,
+  onToggleTheme,
+  showScreen,
+  overrides,
+  onModelInfo,
+}: DeviceModelProps) {
   const { scene } = useGLTF(config.glbPath);
   const groupRef = useRef<THREE.Group>(null);
   const screenMeshRef = useRef<THREE.Mesh | null>(null);
@@ -26,14 +45,16 @@ export function DeviceModel({ config, themeName, onToggleTheme, showScreen }: De
   const [screenCenter, setScreenCenter] = useState<THREE.Vector3 | null>(null);
   const [screenWorldSize, setScreenWorldSize] = useState<THREE.Vector3 | null>(null);
 
-  // Compute scale factor: normalize model height to TARGET_H (3.0)
-  const normalizeScale = useMemo(() => {
+  // Compute scale factor and bounding box info
+  const { normalizeScale, bbox } = useMemo(() => {
     const box = new THREE.Box3().setFromObject(scene);
     const size = new THREE.Vector3();
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
-    if (maxDim === 0) return 1;
-    return TARGET_H / maxDim;
+    return {
+      normalizeScale: maxDim === 0 ? 1 : TARGET_H / maxDim,
+      bbox: { w: size.x, h: size.y, d: size.z },
+    };
   }, [scene]);
 
   // After mount: find the screen mesh and compute its world-space center
@@ -56,20 +77,36 @@ export function DeviceModel({ config, themeName, onToggleTheme, showScreen }: De
       const size = new THREE.Vector3();
       screenBox.getCenter(center);
       screenBox.getSize(size);
-      console.log(`[GLB] ${config.id} normalizeScale: ${normalizeScale}`);
-      console.log(`[GLB] ${config.id} screen center:`, center);
-      console.log(`[GLB] ${config.id} screen size:`, size);
       setScreenCenter(center.clone());
       setScreenWorldSize(size.clone());
+
+      const df = Math.max(size.x, size.y) * (config.portrait ? 1.15 : 1.6);
+      onModelInfo?.({
+        boundingBox: bbox,
+        normalizeScale,
+        screenCenter: [center.x, center.y, center.z],
+        screenSize: { w: size.x, h: size.y },
+        distanceFactor: df,
+      });
     } else {
       console.warn(`[GLB] Screen node "${config.screenNode}" not found`);
-      groupRef.current.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          console.log(`[GLB]   mesh: "${child.name}"`);
-        }
+      onModelInfo?.({
+        boundingBox: bbox,
+        normalizeScale,
+        screenCenter: null,
+        screenSize: null,
+        distanceFactor: config.distanceFactor,
       });
     }
-  }, [config.id, config.screenNode, normalizeScale]);
+  }, [
+    config.id,
+    config.screenNode,
+    config.portrait,
+    config.distanceFactor,
+    normalizeScale,
+    bbox,
+    onModelInfo,
+  ]);
 
   // Toggle screen material transparency
   useEffect(() => {
@@ -90,23 +127,30 @@ export function DeviceModel({ config, themeName, onToggleTheme, showScreen }: De
     ? Math.max(screenWorldSize.x, screenWorldSize.y) * (config.portrait ? 1.15 : 1.6)
     : config.distanceFactor;
 
+  const appliedScale = normalizeScale * (overrides?.scale ?? 1);
+  const pos = overrides?.position ?? [0, 0, 0];
+  const rot = overrides?.rotation ?? [0, 0, 0];
+  const screenOff = overrides?.screenOffset ?? config.htmlPosition;
+
   return (
     <Float
       speed={reducedMotion ? 0 : FLOAT.speed}
       rotationIntensity={reducedMotion ? 0 : FLOAT.rotationIntensity}
       floatIntensity={reducedMotion ? 0 : FLOAT.floatIntensity}
     >
-      <group ref={groupRef} scale={normalizeScale}>
-        <primitive object={scene} />
+      <group position={pos} rotation={[rot[0] * DEG2RAD, rot[1] * DEG2RAD, rot[2] * DEG2RAD]}>
+        <group ref={groupRef} scale={appliedScale}>
+          <primitive object={scene} />
+        </group>
       </group>
 
       {showScreen && screenCenter && (
         <Html
           transform
           position={[
-            screenCenter.x + config.htmlPosition[0],
-            screenCenter.y + config.htmlPosition[1],
-            screenCenter.z + config.htmlPosition[2],
+            screenCenter.x + screenOff[0],
+            screenCenter.y + screenOff[1],
+            screenCenter.z + screenOff[2],
           ]}
           rotation={config.htmlRotation}
           distanceFactor={computedDistanceFactor}

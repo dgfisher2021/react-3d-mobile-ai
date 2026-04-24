@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { SettingsPanel } from '../../components/SettingsPanel';
 import { ViewPresets } from '../../components/ViewPresets';
 import {
   AUTO_RESET,
@@ -25,7 +26,7 @@ const PHONE_VIEWPORT_RATIO = 3.0 / (2 * CAMERA.z * Math.tan(((CAMERA.fov / 2) * 
 const FOV_RAD_HALF = ((CAMERA.fov / 2) * Math.PI) / 180;
 
 export default function CSS3DDemo() {
-  const { themeName, toggleTheme, autoRotate, setAutoRotate } = useDemoContext();
+  const { themeName, toggleTheme, autoRotate, setAutoRotate, showGrid } = useDemoContext();
   const [rotation, setRotation] = useState<Rotation>({
     x: AUTO_RESET.cssDeg.x,
     y: AUTO_RESET.cssDeg.y,
@@ -138,20 +139,22 @@ export default function CSS3DDemo() {
         }}
       />
       {/* Grid floor */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '40%',
-          background:
-            'repeating-linear-gradient(90deg, rgba(49,130,206,0.03) 0px, rgba(49,130,206,0.03) 1px, transparent 1px, transparent 60px),repeating-linear-gradient(0deg, rgba(49,130,206,0.03) 0px, rgba(49,130,206,0.03) 1px, transparent 1px, transparent 60px)',
-          maskImage: 'linear-gradient(to top, rgba(0,0,0,0.3), transparent)',
-          WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.3), transparent)',
-          pointerEvents: 'none',
-        }}
-      />
+      {showGrid && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '40%',
+            background:
+              'repeating-linear-gradient(90deg, rgba(49,130,206,0.03) 0px, rgba(49,130,206,0.03) 1px, transparent 1px, transparent 60px),repeating-linear-gradient(0deg, rgba(49,130,206,0.03) 0px, rgba(49,130,206,0.03) 1px, transparent 1px, transparent 60px)',
+            maskImage: 'linear-gradient(to top, rgba(0,0,0,0.3), transparent)',
+            WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,0.3), transparent)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
 
       <DemoOverlay
         subtitle="CSS 3D — Live App"
@@ -165,6 +168,7 @@ export default function CSS3DDemo() {
       />
 
       <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
+      <SettingsPanel />
 
       {/* 3D phone frame — scaled to match WebGL viewport ratio */}
       <div style={{ perspective, perspectiveOrigin: '50% 50%' }}>

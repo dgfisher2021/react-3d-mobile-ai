@@ -33,7 +33,7 @@ export function DemoOverlay({ subtitle, hint, badges, showHint = true }: DemoOve
             fontFamily: "'JetBrains Mono', monospace",
           }}
         >
-          PPM TECHNOLOGY
+          3D MOBILE SHOWCASE
         </div>
         <div
           style={{
@@ -44,7 +44,7 @@ export function DemoOverlay({ subtitle, hint, badges, showHint = true }: DemoOve
             lineHeight: 1.1,
           }}
         >
-          Sprint Standards
+          Device Viewer
         </div>
         <div
           style={{
@@ -106,7 +106,7 @@ export function DemoOverlay({ subtitle, hint, badges, showHint = true }: DemoOve
       <div
         style={{
           position: 'absolute',
-          bottom: 28,
+          bottom: 76,
           left: 32,
           zIndex: 10,
           animation: 'fadeIn 0.8s ease 0.8s both',

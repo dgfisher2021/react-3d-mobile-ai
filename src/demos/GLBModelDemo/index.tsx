@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { Suspense, useCallback, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { DemoOverlay } from '../../components/DemoOverlay';
+import { SettingsPanel } from '../../components/SettingsPanel';
 import { SidebarButton, ViewPresets } from '../../components/ViewPresets';
 import {
   AUTO_RESET,
@@ -11,17 +12,28 @@ import {
   CAMERA,
   VIEW_PRESETS,
 } from '../../constants/demoSettings';
+import { SceneHelpers } from '../../components/SceneHelpers';
 import { useDemoContext } from '../../context/DemoContext';
-import { DeviceModel } from './DeviceModel';
-import { DEVICES } from './deviceConfigs';
+import { DeviceModel, type ModelInfo } from './DeviceModel';
+import { DEVICES, getDefaultOverrides, type ModelOverrides } from './deviceConfigs';
 
 export default function GLBModelDemo() {
   const { themeName, toggleTheme, autoRotate, setAutoRotate } = useDemoContext();
   const [deviceId, setDeviceId] = useState('iphone');
   const [showScreen, setShowScreen] = useState(true);
+  const [overrides, setOverrides] = useState<Record<string, ModelOverrides>>({});
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const controlsRef = useRef<any>(null);
 
   const config = DEVICES.find((d) => d.id === deviceId) ?? DEVICES[0];
+  const currentOverrides = overrides[config.id] ?? getDefaultOverrides(config);
+
+  const handleOverridesChange = useCallback(
+    (o: ModelOverrides) => {
+      setOverrides((prev) => ({ ...prev, [config.id]: o }));
+    },
+    [config.id],
+  );
 
   const applyPreset = useCallback(
     (index: number) => {
@@ -79,9 +91,12 @@ export default function GLBModelDemo() {
             themeName={themeName}
             onToggleTheme={toggleTheme}
             showScreen={showScreen}
+            overrides={currentOverrides}
+            onModelInfo={setModelInfo}
           />
         </Suspense>
 
+        <SceneHelpers />
         <ContactShadows position={[0, -2, 0]} opacity={0.35} scale={8} blur={2.5} />
         <OrbitControls
           ref={controlsRef}
@@ -123,6 +138,12 @@ export default function GLBModelDemo() {
           onClick={() => setShowScreen((s) => !s)}
         />
       </ViewPresets>
+
+      <SettingsPanel
+        modelInfo={modelInfo}
+        overrides={currentOverrides}
+        onOverridesChange={handleOverridesChange}
+      />
     </div>
   );
 }
