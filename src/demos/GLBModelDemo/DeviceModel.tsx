@@ -46,6 +46,11 @@ export function DeviceModel({
   const { cornerRadius: ctxCornerRadius } = useSettingsContext();
   const [screenCenter, setScreenCenter] = useState<THREE.Vector3 | null>(null);
   const [screenWorldSize, setScreenWorldSize] = useState<THREE.Vector3 | null>(null);
+  const [autoScreenDims, setAutoScreenDims] = useState<{
+    distanceFactor: number;
+    htmlWidth: number;
+    htmlHeight: number;
+  } | null>(null);
 
   // Compute scale factor and bounding box info
   const { normalizeScale, bbox } = useMemo(() => {
@@ -82,13 +87,29 @@ export function DeviceModel({
       setScreenCenter(center.clone());
       setScreenWorldSize(size.clone());
 
-      const df = Math.max(size.x, size.y) * (config.portrait ? 1.15 : 1.6);
+      // Auto-compute screen dimensions from mesh geometry.
+      // The mesh bounding box has 3 dimensions — the smallest is depth
+      // (thickness of the screen quad). The other two are width and height.
+      const dims = [size.x, size.y, size.z].sort((a, b) => b - a);
+      // dims[0] = largest (height for portrait), dims[1] = second (width), dims[2] = depth
+      const screenW = config.portrait ? dims[1] : dims[0];
+      const screenH = config.portrait ? dims[0] : dims[1];
+      const BASE_CSS_WIDTH = 393;
+      const autoDF = screenW;
+      const autoHeight = Math.round(BASE_CSS_WIDTH * (screenH / screenW));
+
+      setAutoScreenDims({
+        distanceFactor: autoDF,
+        htmlWidth: BASE_CSS_WIDTH,
+        htmlHeight: autoHeight,
+      });
+
       onModelInfo?.({
         boundingBox: bbox,
         normalizeScale,
         screenCenter: [center.x, center.y, center.z],
-        screenSize: { w: size.x, h: size.y },
-        distanceFactor: df,
+        screenSize: { w: screenW, h: screenH },
+        distanceFactor: autoDF,
       });
     } else {
       console.warn(`[GLB] Screen node "${config.screenNode}" not found`);
@@ -124,10 +145,7 @@ export function DeviceModel({
     }
   }, [showScreen]);
 
-  // Auto-compute distanceFactor from the screen's world size
-  const computedDistanceFactor = screenWorldSize
-    ? Math.max(screenWorldSize.x, screenWorldSize.y) * (config.portrait ? 1.15 : 1.6)
-    : config.distanceFactor;
+  // Screen sizing: use auto-computed values from mesh geometry, fall back to config
 
   // Convert from actual values to Three.js inputs
   // scale: if overrides.scale is 0 (default/unset), use normalizeScale * 1
@@ -143,23 +161,24 @@ export function DeviceModel({
       floatIntensity={reducedMotion ? 0 : FLOAT.floatIntensity}
     >
       <group position={pos} rotation={[rot[0] * DEG2RAD, rot[1] * DEG2RAD, rot[2] * DEG2RAD]}>
-        <group ref={groupRef} scale={actualScale}>
+        <group ref={groupRef} scale={actualScale} rotation={config.modelRotation}>
           <primitive object={scene} />
         </group>
 
         {showScreen && screenCenter && (
           <Html
             transform
+            occlude="blending"
             position={[
               screenCenter.x + screenPos[0],
               screenCenter.y + screenPos[1],
               screenCenter.z + screenPos[2],
             ]}
             rotation={config.htmlRotation}
-            distanceFactor={computedDistanceFactor}
+            distanceFactor={autoScreenDims?.distanceFactor ?? config.distanceFactor}
             style={{
-              width: config.htmlSize.width,
-              height: config.htmlSize.height,
+              width: autoScreenDims?.htmlWidth ?? config.htmlSize.width,
+              height: autoScreenDims?.htmlHeight ?? config.htmlSize.height,
               borderRadius: config.portrait ? ctxCornerRadius : 8,
               overflow: 'hidden',
               backfaceVisibility: 'hidden',

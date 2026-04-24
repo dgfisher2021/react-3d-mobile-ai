@@ -28,6 +28,8 @@ export interface DeviceConfig {
   htmlSize: { width: number; height: number };
   /** Fallback distanceFactor if auto-compute fails. */
   distanceFactor: number;
+  /** Base rotation to orient the model facing the camera (Euler XYZ in radians). */
+  modelRotation: [number, number, number];
   /** Whether the screen is portrait (phone/tablet) vs landscape (laptop/desktop). */
   portrait: boolean;
 }
@@ -44,6 +46,7 @@ export const DEVICES: DeviceConfig[] = [
     htmlRotation: [0, 0, 0],
     htmlSize: { width: 393, height: 852 },
     distanceFactor: 1.5,
+    modelRotation: [0, Math.PI, 0],
     portrait: true,
   },
   {
@@ -55,6 +58,7 @@ export const DEVICES: DeviceConfig[] = [
     htmlRotation: [-Math.PI / 2, 0, 0],
     htmlSize: { width: 668, height: 432 },
     distanceFactor: 1.5,
+    modelRotation: [0, 0, 0],
     portrait: false,
   },
   {
@@ -66,6 +70,7 @@ export const DEVICES: DeviceConfig[] = [
     htmlRotation: [0, 0, 0],
     htmlSize: { width: 668, height: 432 },
     distanceFactor: 1.5,
+    modelRotation: [0, 0, 0],
     portrait: false,
   },
   {
@@ -77,6 +82,7 @@ export const DEVICES: DeviceConfig[] = [
     htmlRotation: [0, 0, 0],
     htmlSize: { width: 512, height: 683 },
     distanceFactor: 1.5,
+    modelRotation: [0, Math.PI, 0],
     portrait: true,
   },
   {
@@ -88,6 +94,7 @@ export const DEVICES: DeviceConfig[] = [
     htmlRotation: [0, 0, 0],
     htmlSize: { width: 668, height: 432 },
     distanceFactor: 1.5,
+    modelRotation: [0, 0, 0],
     portrait: false,
   },
 ];
