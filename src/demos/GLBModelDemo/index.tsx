@@ -18,9 +18,8 @@ import { DeviceModel, type ModelInfo } from './DeviceModel';
 import { DEVICES, getDefaultOverrides, type ModelOverrides } from './deviceConfigs';
 
 export default function GLBModelDemo() {
-  const { themeName, toggleTheme, autoRotate, setAutoRotate } = useDemoContext();
+  const { themeName, toggleTheme, autoRotate, setAutoRotate, showScreen } = useDemoContext();
   const [deviceId, setDeviceId] = useState('iphone');
-  const [showScreen, setShowScreen] = useState(true);
   const [overrides, setOverrides] = useState<Record<string, ModelOverrides>>({});
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const controlsRef = useRef<any>(null);
@@ -83,6 +82,9 @@ export default function GLBModelDemo() {
         <directionalLight position={[3, 5, 4]} intensity={1.2} />
         <directionalLight position={[-3, 2, 4]} intensity={0.5} color="#8ecdf7" />
         <directionalLight position={[-2, -1, -3]} intensity={0.9} color="#5eead4" />
+        <pointLight position={[0, 4, 2]} intensity={0.4} color={0xfff0e0} />
+        <pointLight position={[-3, 0, 1]} intensity={0.3} color={0x3182ce} />
+        <pointLight position={[3, -1, 1]} intensity={0.25} color={0x9f7aea} />
 
         <Suspense fallback={null}>
           <DeviceModel
@@ -132,11 +134,6 @@ export default function GLBModelDemo() {
             onClick={() => setDeviceId(d.id)}
           />
         ))}
-        <SidebarButton
-          label={showScreen ? 'Screen ●' : 'Screen ○'}
-          active={showScreen}
-          onClick={() => setShowScreen((s) => !s)}
-        />
       </ViewPresets>
 
       <SettingsPanel

@@ -10,14 +10,16 @@ import {
   BG_GRADIENT,
   CAMERA,
   AUTO_ROTATE,
+  FLOAT,
   VIEW_PRESETS,
 } from '../../constants/demoSettings';
+import { PHONE } from '../ThreeJsCanvasDemo/phoneConstants';
 import { SceneHelpers } from '../../components/SceneHelpers';
 import { useDemoContext } from '../../context/DemoContext';
 import { PhoneMesh } from './PhoneMesh';
 
 export default function R3FDemo() {
-  const { themeName, toggleTheme, autoRotate, setAutoRotate } = useDemoContext();
+  const { themeName, toggleTheme, autoRotate, setAutoRotate, showScreen } = useDemoContext();
   const controlsRef = useRef<any>(null);
 
   const applyPreset = useCallback(
@@ -60,7 +62,10 @@ export default function R3FDemo() {
         <directionalLight position={[3, 5, 4]} intensity={1.2} />
         <directionalLight position={[-3, 2, 4]} intensity={0.5} color="#8ecdf7" />
         <directionalLight position={[-2, -1, -3]} intensity={0.9} color="#5eead4" />
-        <PhoneMesh themeName={themeName} onToggleTheme={toggleTheme} />
+        <pointLight position={[0, 4, 2]} intensity={0.4} color={0xfff0e0} />
+        <pointLight position={[-3, 0, 1]} intensity={0.3} color={0x3182ce} />
+        <pointLight position={[3, -1, 1]} intensity={0.25} color={0x9f7aea} />
+        <PhoneMesh themeName={themeName} onToggleTheme={toggleTheme} showScreen={showScreen} />
         <SceneHelpers />
         <ContactShadows position={[0, -2, 0]} opacity={0.35} scale={8} blur={2.5} />
         <OrbitControls
@@ -89,7 +94,14 @@ export default function R3FDemo() {
       />
 
       <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
-      <SettingsPanel />
+      <SettingsPanel
+        staticInfo={{
+          dimensions: `${PHONE.w} x ${PHONE.h} x ${PHONE.d}`,
+          screen: '393 x 852 px',
+          scale: '1.0 (procedural)',
+          float: `speed ${FLOAT.speed}, rot ${FLOAT.rotationIntensity}`,
+        }}
+      />
     </div>
   );
 }

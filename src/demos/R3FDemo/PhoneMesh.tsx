@@ -11,6 +11,7 @@ import { roundedRect } from '../../utils/roundedRect';
 interface PhoneMeshProps {
   themeName: ThemeName;
   onToggleTheme: () => void;
+  showScreen: boolean;
 }
 
 const PHONE_W = PHONE.w;
@@ -28,7 +29,7 @@ const FRONT_Z = PHONE_D / 2 + BEVEL_T;
  * with `transform` to portal the live React dashboard onto the screen
  * plane — so you can interact with the dashboard in 3D space.
  */
-export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
+export function PhoneMesh({ themeName, onToggleTheme, showScreen }: PhoneMeshProps) {
   const bodyRef = useRef<THREE.Mesh>(null);
   const backRef = useRef<THREE.Mesh>(null);
   const reducedMotion = useReducedMotion();
@@ -214,26 +215,25 @@ export function PhoneMesh({ themeName, onToggleTheme }: PhoneMeshProps) {
             `backfaceVisibility: hidden` also hides the mirrored DOM when you
             orbit past 90° — together they stop the dashboard bleeding through
             the back of the phone. */}
-        <Html
-          transform
-          occlude={[bodyRef, backRef]}
-          position={[0, 0, FRONT_Z + 0.02]}
-          distanceFactor={1.35}
-          style={{
-            width: 393,
-            height: 852,
-            // Screen corner radius kept in sync across all three demos
-            // (CSS3D uses 42, Three.js canvas uses 42*s). See
-            // ThreeJsCanvasDemo/buildPhone.ts and CSS3DDemo/index.tsx.
-            borderRadius: 42,
-            overflow: 'hidden',
-            clipPath: 'inset(0 round 42px)',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-          }}
-        >
-          <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
-        </Html>
+        {showScreen && (
+          <Html
+            transform
+            occlude={[bodyRef, backRef]}
+            position={[0, 0, FRONT_Z + 0.02]}
+            distanceFactor={1.35}
+            style={{
+              width: 393,
+              height: 852,
+              borderRadius: 42,
+              overflow: 'hidden',
+              clipPath: 'inset(0 round 42px)',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
+          >
+            <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
+          </Html>
+        )}
       </group>
     </Float>
   );

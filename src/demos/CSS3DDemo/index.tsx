@@ -26,7 +26,8 @@ const PHONE_VIEWPORT_RATIO = 3.0 / (2 * CAMERA.z * Math.tan(((CAMERA.fov / 2) * 
 const FOV_RAD_HALF = ((CAMERA.fov / 2) * Math.PI) / 180;
 
 export default function CSS3DDemo() {
-  const { themeName, toggleTheme, autoRotate, setAutoRotate, showGrid } = useDemoContext();
+  const { themeName, toggleTheme, autoRotate, setAutoRotate, showGrid, showScreen } =
+    useDemoContext();
   const [rotation, setRotation] = useState<Rotation>({
     x: AUTO_RESET.cssDeg.x,
     y: AUTO_RESET.cssDeg.y,
@@ -168,7 +169,15 @@ export default function CSS3DDemo() {
       />
 
       <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
-      <SettingsPanel />
+      <SettingsPanel
+        webgl={false}
+        staticInfo={{
+          dimensions: `${PHONE_W} x ${PHONE_H} CSS px`,
+          phoneScale: phoneScale.toFixed(4),
+          perspective: perspective.toFixed(0),
+          scale: 'viewport-relative',
+        }}
+      />
 
       {/* 3D phone frame — scaled to match WebGL viewport ratio */}
       <div style={{ perspective, perspectiveOrigin: '50% 50%' }}>
@@ -239,7 +248,7 @@ export default function CSS3DDemo() {
               transform: 'translateZ(0px)',
             }}
           >
-            <LiveDashboard themeName={themeName} onToggleTheme={toggleTheme} />
+            {showScreen && <LiveDashboard themeName={themeName} onToggleTheme={toggleTheme} />}
           </div>
           {/* Glass reflection */}
           <div

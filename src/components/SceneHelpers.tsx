@@ -7,15 +7,16 @@ const PARTICLE_COUNT = 60;
 
 function Particles() {
   const pointsRef = useRef<THREE.Points>(null);
-  const positions = useRef<Float32Array>(() => {
+  const positions = useRef<Float32Array>(null!);
+  if (!positions.current) {
     const arr = new Float32Array(PARTICLE_COUNT * 3);
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       arr[i * 3] = (Math.random() - 0.5) * 10;
       arr[i * 3 + 1] = (Math.random() - 0.5) * 8;
       arr[i * 3 + 2] = (Math.random() - 0.5) * 6 - 2;
     }
-    return arr;
-  });
+    positions.current = arr;
+  }
 
   useFrame(({ clock }) => {
     const pts = pointsRef.current;
@@ -50,9 +51,17 @@ export function SceneHelpers() {
     <>
       {showAxes && <axesHelper args={[2]} />}
       {showGrid && (
-        <gridHelper args={[12, 24, '#1a2744', '#0f1a2e']} position={[0, -2, 0]}>
-          <meshBasicMaterial attach="material" opacity={0.3} transparent />
-        </gridHelper>
+        <gridHelper
+          args={[12, 24, '#1a2744', '#0f1a2e']}
+          position={[0, -2, 0]}
+          ref={(grid) => {
+            if (grid) {
+              const mat = grid.material as THREE.Material;
+              mat.opacity = 0.3;
+              mat.transparent = true;
+            }
+          }}
+        />
       )}
       {showParticles && <Particles />}
     </>

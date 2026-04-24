@@ -15,6 +15,7 @@ import { useDemoContext } from '../../context/DemoContext';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { buildPhone } from './buildPhone';
 import { drawScreen } from './drawScreen';
+import { PHONE } from './phoneConstants';
 
 interface OrbitState {
   isDragging: boolean;
@@ -33,7 +34,8 @@ interface OrbitState {
  * has inertia, auto-rotate, and preset view buttons.
  */
 export default function ThreeJsCanvasDemo() {
-  const { autoRotate, setAutoRotate, showAxes, showGrid, showParticles } = useDemoContext();
+  const { autoRotate, setAutoRotate, showAxes, showGrid, showParticles, showScreen } =
+    useDemoContext();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const reducedMotion = useReducedMotion();
   const reducedMotionRef = useRef(reducedMotion);
@@ -49,7 +51,7 @@ export default function ThreeJsCanvasDemo() {
     targetZoom: CAMERA.z,
   });
   const [hint, setHint] = useState(true);
-  const helpersRef = useRef({ showAxes, showGrid, showParticles });
+  const helpersRef = useRef({ showAxes, showGrid, showParticles, showScreen });
 
   // Sync context autoRotate → imperative ref
   useEffect(() => {
@@ -58,8 +60,8 @@ export default function ThreeJsCanvasDemo() {
 
   // Sync environment toggles → imperative ref
   useEffect(() => {
-    helpersRef.current = { showAxes, showGrid, showParticles };
-  }, [showAxes, showGrid, showParticles]);
+    helpersRef.current = { showAxes, showGrid, showParticles, showScreen };
+  }, [showAxes, showGrid, showParticles, showScreen]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -97,6 +99,8 @@ export default function ThreeJsCanvasDemo() {
 
     const phone = buildPhone(screenTexture);
     scene.add(phone);
+
+    const screenMesh = phone.getObjectByName('screen') as THREE.Mesh | undefined;
 
     // Image-based lighting. The titanium frame and camera hardware are
     // metallic (metalness ~0.85); metals get ~100% of their colour from
@@ -181,6 +185,7 @@ export default function ThreeJsCanvasDemo() {
       axesHelper.visible = helpers.showAxes;
       gridHelper.visible = helpers.showGrid;
       particles.visible = helpers.showParticles;
+      if (screenMesh) screenMesh.visible = helpers.showScreen;
 
       if (st.autoRotate && !st.isDragging && !reduce) {
         st.targetRot.y += AUTO_ROTATE.imperativeRadPerFrame;
@@ -348,7 +353,13 @@ export default function ThreeJsCanvasDemo() {
       />
 
       <ViewPresets autoRotate={autoRotate} onPreset={applyPreset} onAuto={resetView} />
-      <SettingsPanel />
+      <SettingsPanel
+        staticInfo={{
+          dimensions: `${PHONE.w} x ${PHONE.h} x ${PHONE.d}`,
+          screen: '512 x 1024 canvas texture',
+          scale: '1.0 (procedural)',
+        }}
+      />
     </div>
   );
 }

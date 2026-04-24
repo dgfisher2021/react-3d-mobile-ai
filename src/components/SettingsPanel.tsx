@@ -74,9 +74,30 @@ const numInputStyle: React.CSSProperties = {
   outline: 'none',
 };
 
-function Toggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+function Toggle({
+  active,
+  onToggle,
+  disabled,
+  label,
+}: {
+  active: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+  label?: string;
+}) {
   return (
-    <button onClick={onToggle} style={toggleBtn(active)}>
+    <button
+      onClick={disabled ? undefined : onToggle}
+      style={{
+        ...toggleBtn(active),
+        opacity: disabled ? 0.3 : 1,
+        cursor: disabled ? 'default' : 'pointer',
+      }}
+      role="switch"
+      aria-checked={active}
+      aria-label={label}
+      disabled={disabled}
+    >
       <div style={toggleDot(active)} />
     </button>
   );
@@ -137,9 +158,17 @@ interface SettingsPanelProps {
   modelInfo?: ModelInfo | null;
   overrides?: ModelOverrides;
   onOverridesChange?: (o: ModelOverrides) => void;
+  staticInfo?: Record<string, string>;
+  webgl?: boolean;
 }
 
-export function SettingsPanel({ modelInfo, overrides, onOverridesChange }: SettingsPanelProps) {
+export function SettingsPanel({
+  modelInfo,
+  overrides,
+  onOverridesChange,
+  staticInfo,
+  webgl = true,
+}: SettingsPanelProps) {
   const {
     showAxes,
     setShowAxes,
@@ -147,6 +176,8 @@ export function SettingsPanel({ modelInfo, overrides, onOverridesChange }: Setti
     setShowGrid,
     showParticles,
     setShowParticles,
+    showScreen,
+    setShowScreen,
     settingsOpen,
     setSettingsOpen,
   } = useDemoContext();
@@ -202,16 +233,38 @@ export function SettingsPanel({ modelInfo, overrides, onOverridesChange }: Setti
           {/* Environment */}
           <div style={sectionHeader}>Environment</div>
           <div style={rowStyle}>
-            <span style={labelStyle}>Axes Helper</span>
-            <Toggle active={showAxes} onToggle={() => setShowAxes(!showAxes)} />
+            <span style={{ ...labelStyle, opacity: webgl ? 1 : 0.4 }}>
+              Axes Helper{!webgl && ' (WebGL)'}
+            </span>
+            <Toggle
+              active={showAxes}
+              onToggle={() => setShowAxes(!showAxes)}
+              disabled={!webgl}
+              label="Axes Helper"
+            />
           </div>
           <div style={rowStyle}>
             <span style={labelStyle}>Grid Floor</span>
-            <Toggle active={showGrid} onToggle={() => setShowGrid(!showGrid)} />
+            <Toggle active={showGrid} onToggle={() => setShowGrid(!showGrid)} label="Grid Floor" />
           </div>
           <div style={rowStyle}>
-            <span style={labelStyle}>Particles</span>
-            <Toggle active={showParticles} onToggle={() => setShowParticles(!showParticles)} />
+            <span style={{ ...labelStyle, opacity: webgl ? 1 : 0.4 }}>
+              Particles{!webgl && ' (WebGL)'}
+            </span>
+            <Toggle
+              active={showParticles}
+              onToggle={() => setShowParticles(!showParticles)}
+              disabled={!webgl}
+              label="Particles"
+            />
+          </div>
+          <div style={rowStyle}>
+            <span style={labelStyle}>Screen Display</span>
+            <Toggle
+              active={showScreen}
+              onToggle={() => setShowScreen(!showScreen)}
+              label="Screen Display"
+            />
           </div>
 
           {/* Model Modifiers */}
@@ -269,6 +322,18 @@ export function SettingsPanel({ modelInfo, overrides, onOverridesChange }: Setti
                   : 'n/a'}
               </div>
               <div style={monoValue}>distanceFactor: {modelInfo.distanceFactor.toFixed(3)}</div>
+            </>
+          )}
+
+          {/* Static Phone Info (non-GLB demos) */}
+          {staticInfo && !modelInfo && (
+            <>
+              <div style={{ ...sectionHeader, marginTop: 16 }}>Phone Info</div>
+              {Object.entries(staticInfo).map(([key, val]) => (
+                <div key={key} style={monoValue}>
+                  {key}: {val}
+                </div>
+              ))}
             </>
           )}
 

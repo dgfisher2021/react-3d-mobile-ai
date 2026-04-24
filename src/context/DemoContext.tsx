@@ -12,6 +12,8 @@ interface DemoContextType {
   setShowGrid: (v: boolean) => void;
   showParticles: boolean;
   setShowParticles: (v: boolean) => void;
+  showScreen: boolean;
+  setShowScreen: (v: boolean) => void;
   settingsOpen: boolean;
   setSettingsOpen: (v: boolean) => void;
 }
@@ -30,8 +32,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const [themeName, setThemeName] = useState<ThemeName>('dark');
   const [autoRotate, setAutoRotate] = useState(true);
   const [showAxes, setShowAxes] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-  const [showParticles, setShowParticles] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
+  const [showParticles, setShowParticles] = useState(true);
+  const [showScreen, setShowScreen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const toggleTheme = useCallback(() => setThemeName((t) => (t === 'dark' ? 'light' : 'dark')), []);
@@ -48,10 +51,21 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       setShowGrid,
       showParticles,
       setShowParticles,
+      showScreen,
+      setShowScreen,
       settingsOpen,
       setSettingsOpen,
     }),
-    [themeName, toggleTheme, autoRotate, showAxes, showGrid, showParticles, settingsOpen],
+    [
+      themeName,
+      toggleTheme,
+      autoRotate,
+      showAxes,
+      showGrid,
+      showParticles,
+      showScreen,
+      settingsOpen,
+    ],
   );
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;

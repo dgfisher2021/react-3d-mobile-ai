@@ -91,6 +91,7 @@ export function buildPhone(screenTexture: THREE.Texture): THREE.Group {
     toneMapped: false,
   });
   const screen = new THREE.Mesh(screenGeo, screenMat);
+  screen.name = 'screen';
   screen.position.z = FRONT_Z + 0.005;
   group.add(screen);
 

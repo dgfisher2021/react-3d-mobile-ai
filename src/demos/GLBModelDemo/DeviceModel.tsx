@@ -142,32 +142,35 @@ export function DeviceModel({
         <group ref={groupRef} scale={appliedScale}>
           <primitive object={scene} />
         </group>
-      </group>
 
-      {showScreen && screenCenter && (
-        <Html
-          transform
-          position={[
-            screenCenter.x + screenOff[0],
-            screenCenter.y + screenOff[1],
-            screenCenter.z + screenOff[2],
-          ]}
-          rotation={config.htmlRotation}
-          distanceFactor={computedDistanceFactor}
-          style={{
-            width: config.htmlSize.width,
-            height: config.htmlSize.height,
-            borderRadius: config.portrait ? 42 : 8,
-            overflow: 'hidden',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-          }}
-        >
-          <div onPointerDown={(e) => e.stopPropagation()} style={{ width: '100%', height: '100%' }}>
-            <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
-          </div>
-        </Html>
-      )}
+        {showScreen && screenCenter && (
+          <Html
+            transform
+            position={[
+              screenCenter.x + screenOff[0],
+              screenCenter.y + screenOff[1],
+              screenCenter.z + screenOff[2],
+            ]}
+            rotation={config.htmlRotation}
+            distanceFactor={computedDistanceFactor}
+            style={{
+              width: config.htmlSize.width,
+              height: config.htmlSize.height,
+              borderRadius: config.portrait ? 42 : 8,
+              overflow: 'hidden',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
+          >
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <LiveDashboard themeName={themeName} onToggleTheme={onToggleTheme} />
+            </div>
+          </Html>
+        )}
+      </group>
     </Float>
   );
 }
