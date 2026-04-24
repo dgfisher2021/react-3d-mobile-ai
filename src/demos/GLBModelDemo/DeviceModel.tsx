@@ -49,6 +49,8 @@ export function DeviceModel({
   const groupRef = useRef<THREE.Group>(null);
   const screenMeshRef = useRef<THREE.Mesh | null>(null);
   const bodyMeshRef = useRef<THREE.Mesh>(null!);
+  const frameMeshRef = useRef<THREE.Mesh>(null!);
+  const bezelMeshRef = useRef<THREE.Mesh>(null!);
   const reducedMotion = useReducedMotion();
   const { cornerRadius: ctxCornerRadius } = useSettingsContext();
   const [screenCenter, setScreenCenter] = useState<THREE.Vector3 | null>(null);
@@ -78,13 +80,20 @@ export function DeviceModel({
   useEffect(() => {
     if (!groupRef.current) return;
     let screenMesh: THREE.Mesh | null = null;
+    groupRef.current.updateMatrixWorld(true);
     groupRef.current.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         if (child.name === config.screenNode) {
           screenMesh = child as THREE.Mesh;
         }
-        if (child.name === 'Body_Body_0') {
-          bodyMeshRef.current = child as THREE.Mesh;
+        if (child.name === 'Body001_Screen_Glass_0') {
+          const invMatrix = new THREE.Matrix4().copy(scene.matrixWorld).invert();
+          const glassWorldPos = new THREE.Vector3();
+          child.getWorldPosition(glassWorldPos);
+          const glassLocal = glassWorldPos.applyMatrix4(invMatrix);
+          console.log(
+            `[Glass] localPos: x=${glassLocal.x.toFixed(4)} y=${glassLocal.y.toFixed(4)} z=${glassLocal.z.toFixed(4)}`,
+          );
         }
       }
     });
@@ -130,7 +139,7 @@ export function DeviceModel({
     );
 
     // Slight oversize (1.02x) to cover axis-aligned bbox edge cases
-    const OVERSIZE = 1.0; // Testing: no oversize, Float disabled during measurement
+    const OVERSIZE = 1.0;
     const BASE_CSS_WIDTH = 393;
     const screenW = worldW * OVERSIZE;
     const screenH = worldH * OVERSIZE;
