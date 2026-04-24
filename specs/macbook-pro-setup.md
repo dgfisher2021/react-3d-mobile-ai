@@ -146,13 +146,22 @@ Update the MacBook entry in deviceConfigs.ts.
 
 ## When you're done
 
-Report:
-1. What `modelRotation` value you used and why
-2. What `htmlRotation` value you used and why
-3. What `htmlPosition` Z offset worked
-4. The console log output showing screen mesh dimensions
-5. Whether the auto-sizing worked correctly or needed adjustment for the rotated screen
-6. Whether occlusion works
-7. Whether the iPhone still works after your changes
-8. What changes you made to DeviceModel.tsx and SettingsPanel.tsx
-9. Anything you're uncertain about
+1. **Update THIS spec file** (`specs/macbook-pro-setup.md`) by appending an "Implementation Results" section at the bottom with:
+   - The final config values (modelRotation, htmlRotation, htmlPosition) and why
+   - Console log output showing screen mesh dimensions
+   - Whether auto-sizing worked or needed adjustment for the rotated screen
+   - Whether occlusion works on both devices
+   - Whether the iPhone still works after your changes
+   - Every change you made to DeviceModel.tsx and SettingsPanel.tsx with reasoning
+   - Anything you're uncertain about
+   - Open issues or things that need follow-up
+
+   This is how the reviewing agent will check your work — if it's not in the spec, it didn't happen.
+
+2. **Commit everything** to `feature/macbook-screen` and push.
+
+3. **Report a summary** to the user.
+
+## If you're unsure
+
+**Ask the user.** Don't guess at rotations or positioning. Don't make changes you can't verify. If something looks wrong and you don't know why, describe what you see and ask for guidance. Getting it right matters more than getting it done fast.
