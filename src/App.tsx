@@ -8,6 +8,7 @@ const ThreeJsCanvasDemo = lazy(() => import('./demos/ThreeJsCanvasDemo'));
 const CSS3DDemo = lazy(() => import('./demos/CSS3DDemo'));
 const R3FDemo = lazy(() => import('./demos/R3FDemo'));
 const GLBModelDemo = lazy(() => import('./demos/GLBModelDemo'));
+const TubesCursorDemo = lazy(() => import('./demos/TubesCursorDemo'));
 
 const TABS: DemoTab[] = [
   {
@@ -40,6 +41,11 @@ const TABS: DemoTab[] = [
     label: 'More Devices',
     blurb: 'iMac, iPad Pro, and Office Monitor GLB models.',
   },
+  {
+    id: 'tubes',
+    label: 'Tubes Cursor',
+    blurb: 'Interactive 3D tube cursor effect from threejs-components.',
+  },
 ];
 
 export default function App() {
@@ -56,6 +62,7 @@ export default function App() {
             {active === 'iphone' && <GLBModelDemo key="iphone" defaultDevice="iphone" />}
             {active === 'macbook' && <GLBModelDemo key="macbook" defaultDevice="macbook" />}
             {active === 'glb-other' && <GLBModelDemo key="other" />}
+            {active === 'tubes' && <TubesCursorDemo />}
           </Suspense>
           <DemoTabs tabs={TABS} activeId={active} onChange={setActive} />
         </div>
