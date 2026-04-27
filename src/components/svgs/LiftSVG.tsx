@@ -1,0 +1,61 @@
+import type { SVGProps } from 'react';
+import { getColor } from './colors';
+
+interface LiftSVGProps extends SVGProps<SVGSVGElement> {
+  accentColor?: string;
+  size?: number;
+}
+
+export default function LiftSVG({ accentColor = 'yellow', size = 32, ...props }: LiftSVGProps) {
+  const g100 = getColor('gray', 100);
+  const g200 = getColor('gray', 200);
+  const g300 = getColor('gray', 300);
+  const g300b = getColor('gray', 300);
+  const ac300 = getColor(accentColor, 300);
+  const ac400 = getColor(accentColor, 400);
+  const g400 = getColor('gray', 400);
+
+  return (
+    <svg
+      fill="none"
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <rect x="42.405" fill={g100} width="427.19" height="502.577" />
+      <g>
+        <rect x="256" fill={g200} width="213.595" height="502.577" />
+        <rect x="142.92" y="150.773" fill={g200} width="113.08" height="351.804" />
+      </g>
+      <rect x="256" y="150.773" fill={g300} width="113.08" height="351.804" />
+      <path
+        fill={g300b}
+        d="M494.724,493.153H378.503v-342.38c0-5.205-4.219-9.423-9.423-9.423H142.92
+      	c-5.204,0-9.423,4.218-9.423,9.423v342.38H17.276c-5.204,0-9.423,4.218-9.423,9.423S12.072,512,17.276,512h477.448
+      	c5.204,0,9.423-4.218,9.423-9.423S499.928,493.153,494.724,493.153z M152.344,493.153V160.196h94.233v332.957H152.344z
+      	 M265.423,493.153V160.196h94.233v332.957H265.423z"
+      />
+      <rect x="230.871" y="50.258" fill={ac300} width="50.258" height="50.258" />
+      <g>
+        <rect x="256" y="50.258" fill={ac400} width="25.129" height="50.258" />
+        <path
+          fill={ac400}
+          d="M419.336,323.534c-8.657,0-15.702-7.044-15.704-15.702c0.003-8.664,7.049-15.709,15.707-15.709
+      		c8.657,0,15.702,7.044,15.706,15.702C435.04,316.49,427.994,323.534,419.336,323.534z"
+        />
+      </g>
+      <path
+        fill={g300b}
+        d="M419.336,373.791c-8.657,0-15.702-7.044-15.704-15.702c0.003-8.664,7.049-15.709,15.707-15.709
+      	c8.657,0,15.702,7.044,15.706,15.702C435.04,366.748,427.994,373.791,419.336,373.791z"
+      />
+      <path
+        fill={g400}
+        d="M494.724,493.153H378.503v-342.38c0-5.205-4.219-9.423-9.423-9.423H256V512h238.724
+      	c5.204,0,9.423-4.218,9.423-9.423S499.928,493.153,494.724,493.153z M359.656,493.153h-94.233V160.196h94.233V493.153z"
+      />
+    </svg>
+  );
+}
