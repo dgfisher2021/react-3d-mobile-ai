@@ -2,29 +2,41 @@
 
 Live demo: https://dgfisher2021.github.io/react-3d-mobile-ai/
 
-Four side-by-side approaches to rendering 3D devices with a live React
-dashboard on screen. Built with Vite + React 18 + TypeScript + Three.js.
+Side-by-side approaches to rendering 3D content with a live React dashboard
+on screen, plus a couple of pure-3D showcases. Built with Vite + React 18 +
+TypeScript + Three.js.
 
-## The four demos
+## The demos
 
-| Tab             | Stack                           | Dashboard on screen                                  |
-| --------------- | ------------------------------- | ---------------------------------------------------- |
-| Three.js Canvas | `three` only, hand-rolled orbit | Static paint via `CanvasTexture` (`drawScreen.ts`)   |
-| CSS 3D Live     | CSS `rotateX/Y` + `perspective` | Real interactive `<LiveDashboard/>` React tree       |
-| R3F + drei Live | `@react-three/fiber` + `drei`   | Real `<LiveDashboard/>` via drei `<Html transform/>` |
-| GLB Models Live | `useGLTF` + `drei`              | Real `<LiveDashboard/>` on pre-made 3D device models |
+| Tab             | Stack                              | What's on it                                          |
+| --------------- | ---------------------------------- | ----------------------------------------------------- |
+| Three.js Canvas | `three` only, hand-rolled orbit    | Static paint via `CanvasTexture` (`drawScreen.ts`)    |
+| CSS 3D Live     | CSS `rotateX/Y` + `perspective`    | Real interactive `<LiveDashboard/>` React tree        |
+| R3F + drei Live | `@react-three/fiber` + `drei`      | Real `<LiveDashboard/>` via drei `<Html transform/>`  |
+| iPhone 13 Pro   | `useGLTF` GLB + `<Html transform>` | DatSketch iPhone model with the dashboard overlaid    |
+| MacBook Pro     | `useGLTF` GLB + `<Html transform>` | pmndrs/drei sample MacBook with the dashboard overlaid |
+| More Devices    | `useGLTF` GLB + `<Html transform>` | iMac / iPad / Office Monitor with the dashboard overlaid |
+| Helmet Decal    | `useGLTF` + decal projection       | Hard-hat model with selectable SVG-to-texture decals  |
+| Tubes Cursor    | R3F custom effects                 | Cursor-reactive tubes + ambient background            |
 
-All demos share the same controls (Front / Angle / Back / Auto), auto-rotate
-speed, camera settings, and float animation via shared constants in
+The Three.js / CSS3D / R3F + drei / iPhone / MacBook / More Devices demos all
+render the same `LiveDashboard` component (PPM Sprint Standards). Helmet Decal
+and Tubes Cursor are standalone 3D showcases.
+
+Demos with a phone-like form factor share controls (Front / Angle / Back /
+Auto), camera settings, and animation params via shared constants in
 `src/constants/demoSettings.ts` and shared state in `src/context/DemoContext.tsx`.
+A `SettingsContext` + `SettingsPanel` exposes per-demo tunables for live
+tweaking.
 
-### GLB Models demo
+### GLB device tabs
 
-The GLB tab loads pre-made 3D models from Sketchfab and overlays the live
-React dashboard onto each device's screen mesh using drei's `<Html transform>`.
-Switch between 5 devices: iPhone 13 Pro, MacBook Pro, iMac 2021, iPad Pro,
-and Office Monitor. Models are auto-scaled to a uniform size via bounding box
-normalization.
+Each device tab loads a pre-made 3D model and overlays the live React dashboard
+onto the screen mesh using drei's `<Html transform>`. Models are auto-scaled to
+a uniform size via bounding-box normalization. Per-device offsets (screen mesh
+name, glass-overlay tuning, rotation) live in
+`src/demos/GLBModelDemo/deviceConfigs.ts`. The "More Devices" tab cycles between
+iMac 2021, iPad Pro, and Office Monitor.
 
 GLB files are tracked with **Git LFS** (`*.glb` in `.gitattributes`).
 
@@ -48,7 +60,14 @@ src/
 │   ├── DemoOverlay.tsx              # Shared title/hint/badges UI
 │   ├── DemoTabs.tsx                 # Demo switcher pill
 │   ├── ViewPresets.tsx              # Shared sidebar buttons (Front/Angle/Back/Auto)
-│   └── dashboard/                   # Shared live app (CSS 3D, R3F, GLB demos)
+│   ├── SettingsPanel.tsx            # Live tunables (camera, screen, rotation, etc.)
+│   ├── MeshBoundingBoxes.tsx        # Dev helper — visualise GLB mesh bboxes
+│   ├── MeshLayerTree.tsx            # Dev helper — collapsible mesh hierarchy
+│   ├── SceneHelpers.tsx             # Grid + axis gizmo overlays
+│   ├── svgs/                        # ~60 construction-themed SVG components
+│   │   ├── index.ts                 # Barrel export
+│   │   └── …
+│   └── dashboard/                   # Shared live app
 │       ├── LiveDashboard.tsx
 │       ├── PhoneChrome.tsx
 │       ├── BottomNav.tsx
@@ -57,8 +76,11 @@ src/
 │       ├── MeetingsTab.tsx
 │       ├── HierarchyTab.tsx
 │       └── AssistPanel.tsx
+├── context/
+│   ├── DemoContext.tsx              # Shared theme + auto-rotate state
+│   └── SettingsContext.tsx          # Live tweakable settings per demo
 ├── utils/
-│   └── roundedRect.ts              # Shared THREE.Shape utility
+│   └── roundedRect.ts               # Shared THREE.Shape utility
 ├── hooks/
 │   ├── useAIResponseParser.ts
 │   └── useReducedMotion.ts
@@ -72,10 +94,17 @@ src/
 │   ├── R3FDemo/
 │   │   ├── index.tsx
 │   │   └── PhoneMesh.tsx
-│   └── GLBModelDemo/
-│       ├── index.tsx
-│       ├── DeviceModel.tsx          # GLB loader + screen overlay
-│       └── deviceConfigs.ts         # Per-device config (screen mesh, dimensions)
+│   ├── GLBModelDemo/
+│   │   ├── index.tsx
+│   │   ├── DeviceModel.tsx          # GLB loader + screen overlay
+│   │   └── deviceConfigs.ts         # Per-device config (screen mesh, dimensions)
+│   ├── HelmetDecalDemo/
+│   │   ├── index.tsx
+│   │   ├── HelmetModel.tsx
+│   │   ├── DecalPicker.tsx
+│   │   ├── svgEntries.ts
+│   │   └── useSvgTexture.ts         # SVG → CanvasTexture decal pipeline
+│   └── TubesCursorDemo/index.tsx
 ├── types/index.ts
 public/
 ├── apple_iphone_13_pro_max.glb      # Git LFS
@@ -83,22 +112,28 @@ public/
 ├── imac_2021.glb                    # Git LFS
 ├── macbook.glb                      # Git LFS
 └── office_monitor__workstation_monitor.glb  # Git LFS
-specs/
-└── settings-panel.md                # Implementation plan for settings panel
+specs/                               # Implementation plans
+├── macbook-pro-setup.md
+├── settings-panel-v3.md
+└── upgrade-roadmap.md
+docs/                                # Technical reference
+└── glb-screen-overlay.md
 ```
 
 ## Shared architecture
 
-All four demos consume from two shared sources:
+Dashboard-bearing demos consume from three shared sources:
 
 - **`demoSettings.ts`** — single source of truth for camera (fov, distance, zoom limits),
-  auto-rotate speeds (in each coordinate system), float animation params, view preset
-  angles, and background gradient.
+  auto-rotate speeds in each coordinate system, float animation params, view preset
+  angles, and the background gradient.
 - **`DemoContext`** — React context providing `themeName`, `toggleTheme`, `autoRotate`,
   and `setAutoRotate` so state persists across tab switches.
+- **`SettingsContext`** — per-demo live tunables surfaced through `SettingsPanel`
+  (screen size, corner radius, rotation, distance factor, etc.) for in-browser tweaking.
 
-View preset buttons (`ViewPresets.tsx`) and sidebar button styling are shared components
-used by all demos.
+View preset buttons (`ViewPresets.tsx`) and the sidebar button styling are shared
+components used by every demo with a phone/device form factor.
 
 ## AI panel
 
